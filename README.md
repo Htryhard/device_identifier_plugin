@@ -64,13 +64,19 @@ Add the following permissions to your `android/app/src/main/AndroidManifest.xml`
 <!-- For serial number (optional) -->
 <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
+<!-- If you need to obtain a Google Advertising ID (optional) -->
+<uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
 <!-- For file-based ID (optional) -->
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-<!-- For Android 11+ file access (optional) -->
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+<!-- Android 11+ File access, if file storage device identifier is required (optional) -->
+<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 ```
+
+> Tip: If you need to obtain GAID, your device must support Google services
 
 ### iOS
 
@@ -80,6 +86,9 @@ Add the following to your `ios/Runner/Info.plist` for advertising tracking:
 <key>NSUserTrackingUsageDescription</key>
 <string>This app would like to access IDFA for analytics and personalized ads.</string>
 ```
+
+Please check whether there is an AppTrackingTransparency.framework in this path:
+`Xcode - Build Phases - Link Binary With Libraries add AppTrackingTransparency.framework`
 
 ---
 

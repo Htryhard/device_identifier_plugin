@@ -62,13 +62,19 @@ flutter pub get
 <!-- 获取序列号（可选） -->
 <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
+<!-- 如果需要获取Google Advertising ID (可选)-->
+<uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
 <!-- 文件存储ID（可选） -->
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-<!-- Android 11+ 文件访问（可选） -->
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+<!-- Android 11+ 文件访问，如果需要文件存储设备标识符（可选） -->
+<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 ```
+
+> 提示：如果需要获取GAID，还需要设备支持谷歌服务
 
 ### iOS
 
@@ -78,6 +84,8 @@ flutter pub get
 <key>NSUserTrackingUsageDescription</key>
 <string>本应用需要访问IDFA用于分析和个性化广告。</string>
 ```
+
+请检查此路径下是否有AppTrackingTransparency.framework `Xcode - Build Phases - Link Binary With Libraries 新增 AppTrackingTransparency.framework`
 
 ---
 
