@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hicyh.device_identifier_plugin">
+    
+    <!-- Flutter插件不应在此声明权限 -->
+    <!-- 权限应该由使用插件的应用在其AndroidManifest.xml中根据需要声明 -->
+    
+</manifest>

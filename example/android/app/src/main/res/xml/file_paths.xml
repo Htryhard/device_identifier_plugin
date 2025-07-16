@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 外部存储根目录 -->
+    <external-path name="external_storage_root" path="." />
+    
+    <!-- 应用特定的外部存储目录 -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- 外部缓存目录 -->
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- 内部存储目录 -->
+    <files-path name="internal_files" path="." />
+    
+    <!-- 内部缓存目录 -->
+    <cache-path name="internal_cache" path="." />
+    
+    <!-- 设备标识符专用目录 -->
+    <external-path name="device_identifier" path="DeviceIdentifier/" />
+</paths> 
