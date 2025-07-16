@@ -1,5 +1,10 @@
 name: device_identifier_plugin
-description: "A new Flutter plugin project."
+description: "A Flutter plugin for obtaining device identifiers on Android and iOS, including Android ID, Advertising ID, UUID, device fingerprint, and more."
+repository: https://github.com/Htryhard/device_identifier_plugin
+issue_tracker: https://github.com/Htryhard/device_identifier_plugin/issues
+maintainers:
+  - Dai Mao <753132377@qq.com>
+license: MIT
 version: 0.0.6
 homepage: https://github.com/Htryhard/device_identifier_plugin
 
