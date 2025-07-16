@@ -3,6 +3,8 @@
 [![pub package](https://img.shields.io/pub/v/device_identifier_plugin.svg)](https://pub.dev/packages/device_identifier_plugin)
 [![Platform](https://img.shields.io/badge/platform-android%20%7C%20ios-blue.svg)](https://pub.dev/packages/device_identifier_plugin)
 
+> 📖 [中文文档请点这里 (README_zh.md)](README_zh.md)
+
 A comprehensive Flutter plugin for obtaining various device identifiers, supporting both Android and iOS platforms.
 
 ---
