@@ -100,19 +100,17 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * 获取 Android ID
      *
      * 稳定性分析：
-     * - 卸载重装：不变 ✓
-     * - 工厂重置：会变化 ✗
-     * - 刷机/Root：会变化 ✗
-     * - 切换用户：会变化 ✗
-     * - 系统更新：不变 ✓
-     * - 应用更新：不变 ✓
+     * - 卸载重装：不变 
+     * - 工厂重置：会变化 
+     * - 刷机/Root：会变化 
+     * - 切换用户：会变化 
+     * - 系统更新：不变 
+     * - 应用更新：不变 
      *
      * 特殊情况：
      * - 某些设备可能返回相同的ID（9774d56d682e549c）
      * - 模拟器通常返回固定值
      * - Android 8.0+ 对于未签名应用可能返回不同值
-     *
-     * 推荐使用场景：用户行为分析、崩溃统计
      */
     @SuppressLint("HardwareIds")
     fun getAndroidId(): String? {
@@ -136,12 +134,12 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * 获取广告 ID (GAID - Google Advertising ID)
      *
      * 稳定性分析：
-     * - 卸载重装：不变 ✓
-     * - 工厂重置：会变化 ✗
-     * - 用户手动重置：会变化 ✗
-     * - 系统自动重置：约每月一次 ✗
-     * - 系统更新：不变 ✓
-     * - 应用更新：不变 ✓
+     * - 卸载重装：不变 
+     * - 工厂重置：会变化 
+     * - 用户手动重置：会变化 
+     * - 系统自动重置：约每月一次 
+     * - 系统更新：不变 
+     * - 应用更新：不变 
      *
      * 特殊情况：
      * - 用户可以在设置中限制广告追踪
@@ -154,8 +152,6 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 必须遵循 Google Play 政策
      * - 不能用于识别个人身份
      * - 用户可以选择退出广告追踪
-     *
-     * 推荐使用场景：广告归因、用户获取分析
      */
     suspend fun getAdvertisingIdInfo(): Pair<String?, Boolean> {
         return withContext(Dispatchers.IO) {
@@ -190,19 +186,6 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 存储在应用私有数据中
      * - 应用数据备份/恢复时可能保持不变
      * - 不同应用会有不同的UUID
-     *
-     * 优点：
-     * - 完全由应用控制
-     * - 不需要任何权限
-     * - 兼容所有Android版本
-     * - 不受用户设置影响
-     *
-     * 缺点：
-     * - 无法跨应用识别同一设备
-     * - 卸载重装后会变化
-     * - 无法识别同一用户的不同安装
-     *
-     * 推荐使用场景：应用安装统计、首次启动检测
      */
     private fun getInstallUuid(): String {
         var uuid = sharedPreferences.getString(KEY_INSTALL_UUID, null)
@@ -217,12 +200,12 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * 获取设备指纹
      *
      * 稳定性分析：
-     * - 卸载重装：不变 ✓（基于硬件信息）
-     * - 工厂重置：不变 ✓
-     * - 系统更新：通常不变 ✓
-     * - 硬件变化：会变化 ✗
-     * - 屏幕分辨率变化：会变化 ✗
-     * - 刷机：可能变化 ⚠️
+     * - 卸载重装：不变 （基于硬件信息）
+     * - 工厂重置：不变 
+     * - 系统更新：通常不变 
+     * - 硬件变化：会变化 
+     * - 屏幕分辨率变化：会变化 
+     * - 刷机：可能变化  
      *
      * 包含的信息：
      * - 设备型号、制造商、主板信息
@@ -235,19 +218,6 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 模拟器可能返回通用值
      * - 某些定制ROM可能修改硬件信息
      * - 相同型号设备可能有相似指纹
-     *
-     * 优点：
-     * - 不需要特殊权限
-     * - 相对稳定
-     * - 卸载重装后不变
-     * - 不受用户设置影响
-     *
-     * 缺点：
-     * - 隐私争议较大
-     * - 可能被硬件变化影响
-     * - 算法复杂度较高
-     *
-     * 推荐使用场景：设备识别、反作弊检测
      */
     private fun getDeviceFingerprint(): String {
         var fingerprint = sharedPreferences.getString(KEY_DEVICE_FINGERPRINT, null)
@@ -258,36 +228,60 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
         return fingerprint
     }
 
-    /**
-     * 生成设备指纹
-     */
-    private fun generateDeviceFingerprint(): String {
-        val sb = StringBuilder()
+ /**
+ * 生成设备指纹
+ *
+ * 设备指纹由以下信息拼接后哈希生成：
+ * 1. 基本设备信息：
+ *    - Build.BOARD         // 主板名称
+ *    - Build.BRAND         // 品牌
+ *    - Build.DEVICE        // 设备名
+ *    - Build.HARDWARE      // 硬件名
+ *    - Build.MANUFACTURER  // 设备制造商
+ *    - Build.MODEL         // 设备型号
+ *    - Build.PRODUCT       // 产品名
+ *
+ * 2. 系统版本信息：
+ *    - Build.VERSION.RELEASE   // 系统版本号（如 "13"）
+ *    - Build.VERSION.SDK_INT   // SDK 版本号（如 33）
+ *
+ * 3. 屏幕信息：
+ *    - displayMetrics.widthPixels   // 屏幕宽度（像素）
+ *    - displayMetrics.heightPixels  // 屏幕高度（像素）
+ *    - displayMetrics.densityDpi    // 屏幕密度（DPI）
+ *
+ * 4. CPU 信息：
+ *    - Build.SUPPORTED_ABIS        // 支持的 CPU 架构（如 ["arm64-v8a", "armeabi-v7a"]）
+ *
+ * 最终将上述信息拼接后进行哈希，得到设备指纹。
+ */
+private fun generateDeviceFingerprint(): String {
+    val sb = StringBuilder()
 
-        // 基本设备信息
-        sb.append(Build.BOARD)
-        sb.append(Build.BRAND)
-        sb.append(Build.DEVICE)
-        sb.append(Build.HARDWARE)
-        sb.append(Build.MANUFACTURER)
-        sb.append(Build.MODEL)
-        sb.append(Build.PRODUCT)
+    // 基本设备信息
+    sb.append(Build.BOARD)         // 主板名称
+    sb.append(Build.BRAND)         // 品牌
+    sb.append(Build.DEVICE)        // 设备名
+    sb.append(Build.HARDWARE)      // 硬件名
+    sb.append(Build.MANUFACTURER)  // 设备制造商
+    sb.append(Build.MODEL)         // 设备型号
+    sb.append(Build.PRODUCT)       // 产品名
 
-        // 系统版本信息
-        sb.append(Build.VERSION.RELEASE)
-        sb.append(Build.VERSION.SDK_INT)
+    // 系统版本信息
+    sb.append(Build.VERSION.RELEASE)   // 系统版本号
+    sb.append(Build.VERSION.SDK_INT)   // SDK 版本号
 
-        // 屏幕信息
-        val displayMetrics = context.resources.displayMetrics
-        sb.append(displayMetrics.widthPixels)
-        sb.append(displayMetrics.heightPixels)
-        sb.append(displayMetrics.densityDpi)
+    // 屏幕信息
+    val displayMetrics = context.resources.displayMetrics
+    sb.append(displayMetrics.widthPixels)   // 屏幕宽度
+    sb.append(displayMetrics.heightPixels)  // 屏幕高度
+    sb.append(displayMetrics.densityDpi)    // 屏幕密度
 
-        // CPU 信息
-        sb.append(Build.SUPPORTED_ABIS.contentToString())
+    // CPU 信息
+    sb.append(Build.SUPPORTED_ABIS.contentToString()) // 支持的 CPU 架构
 
-        return hashString(sb.toString())
-    }
+    return hashString(sb.toString())
+}
 
     /**
      * 获取设备序列号
@@ -309,23 +303,6 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 某些设备可能返回 "unknown"
      * - 模拟器通常返回固定值
      * - 某些厂商ROM可能限制访问
-     *
-     * 隐私考虑：
-     * - 这是最敏感的设备标识符
-     * - Google 强烈不建议使用
-     * - 可能违反某些地区的隐私法规
-     *
-     * 优点：
-     * - 最稳定的标识符
-     * - 硬件级别唯一性
-     * - 不受软件操作影响
-     *
-     * 缺点：
-     * - 隐私风险极高
-     * - 权限要求严格
-     * - 新版本Android基本无法获取
-     *
-     * 推荐使用场景：不建议使用（仅供测试）
      */
     @SuppressLint("HardwareIds", "MissingPermission")
     private fun getBuildSerial(): String? {
@@ -358,10 +335,10 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * 生成组合ID
      *
      * 稳定性分析：
-     * - 卸载重装：可能变化 ⚠️（取决于组成部分）
+     * - 卸载重装：可能变化  （取决于组成部分）
      * - 工厂重置：会变化 ✗
      * - 系统更新：通常不变 ✓
-     * - 用户操作：可能变化 ⚠️
+     * - 用户操作：可能变化  
      *
      * 组合策略：
      * - 优先使用稳定的标识符（Android ID、设备指纹）
@@ -372,18 +349,6 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 如果所有标识符都无法获取，生成随机UUID
      * - 使用SHA-256哈希确保一致性
      * - 不同的标识符组合会产生不同的结果
-     *
-     * 优点：
-     * - 综合多个标识符的优势
-     * - 降低单一标识符失效的风险
-     * - 可以根据需要调整组合策略
-     *
-     * 缺点：
-     * - 复杂度较高
-     * - 调试困难
-     * - 稳定性取决于组成部分
-     *
-     * 推荐使用场景：综合设备识别、多重验证
      */
     private fun generateCombinedId(
         androidId: String?,
@@ -644,28 +609,17 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * - 所有版本：支持MediaStore API作为备选方案
      *
      * 稳定性分析：
-     * - 卸载重装：可能不变 ⚠️（取决于存储策略）
-     * - 工厂重置：会变化 ✗（外部存储被清空）
-     * - 系统更新：不变 ✓
-     * - 应用更新：不变 ✓
-     * - 用户手动删除文件：会变化 ✗
-     * - 存储卡更换：会变化 ✗
+     * - 卸载重装：可能不变  （取决于存储策略）
+     * - 工厂重置：会变化（外部存储被清空）
+     * - 系统更新：不变
+     * - 应用更新：不变
+     * - 用户手动删除文件：会变化
+     * - 存储卡更换：会变化
      *
      * 权限要求：
      * - Android 6.0-10：WRITE_EXTERNAL_STORAGE 权限
      * - Android 11+：MANAGE_EXTERNAL_STORAGE 权限（可选）
      * - 应用特定存储：无需权限
-     *
-     * 优点：
-     * - 自动选择最佳存储策略
-     * - 多策略降级保障
-     * - 完全适配分区存储
-     * - 提供详细的存储信息
-     *
-     * 缺点：
-     * - 复杂度较高
-     * - 某些策略需要权限
-     * - 工厂重置后会丢失
      *
      * @param fileName 文件名，默认为 "device_id.txt"
      * @param folderName 文件夹名称，默认为 "DeviceIdentifier"

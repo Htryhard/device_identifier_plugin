@@ -104,6 +104,29 @@ class MethodChannelDeviceIdentifierPlugin
     return result;
   }
 
+  /// 设置钥匙串的服务和账户名称
+  /// iOS专属接口
+  /// 用于自定义钥匙串存储位置
+  /// [service] 钥匙串服务名称，默认为 'com.hicyh.getdeviceid.keychain'
+  /// [keyAccount] 钥匙串账户名称，默认为 'device_uuid'
+  /// [deviceIDAccount] 钥匙串设备ID账户名称，默认为 'ios_device_id'
+  /// 如果不设置则使用默认值
+  /// 如果需要在iOS中使用钥匙串存储设备标识符，
+  /// 请在调用其他钥匙串相关方法之前先调用此方法设置服务和账户名称
+  /// 注意：此方法仅在iOS平台上有效，Android平台不支持钥匙串存储
+  @override
+  Future<void> setKeychainServiceAndAccount({
+    String service = 'com.hicyh.getdeviceid.keychain',
+    String keyAccount = 'device_uuid',
+    String deviceIDAccount = 'ios_device_id',
+  }) {
+    return methodChannel.invokeMethod('setKeychainServiceAndAccount', {
+      'service': service,
+      'keyUUIDAccount': keyAccount,
+      'deviceIDAccount': deviceIDAccount,
+    });
+  }
+
   /// iOS 特有方法：请求广告追踪权限
   ///
   /// 在iOS 14.5+版本中，需要用户明确授权才能获取IDFA

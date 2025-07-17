@@ -37,7 +37,7 @@
 
 ```yaml
 dependencies:
-  device_identifier_plugin: ^0.0.6
+  device_identifier_plugin: ^0.0.7
 ```
 
 然后执行：
@@ -52,26 +52,49 @@ flutter pub get
 
 ### Android
 
+#### 配置AndroidManifest.xml
+
 根据需要在 `android/app/src/main/AndroidManifest.xml` 添加如下权限：
 
 ```xml
-<!-- 基础权限 -->
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- 注意，不要忘记上面那行 xmlns:tools='xxxxxxx'  -->
+      <!-- 基础权限 -->
+      <uses-permission android:name="android.permission.INTERNET" />
+      <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-<!-- 获取序列号（可选） -->
-<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+      <!-- 获取序列号（可选） -->
+      <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-<!-- 如果需要获取Google Advertising ID (可选)-->
-<uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+      <!-- 如果需要获取Google Advertising ID (可选)-->
+      <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-<!-- 文件存储ID（可选） -->
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+      <!-- 文件存储ID（可选） -->
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+      <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-<!-- Android 11+ 文件访问，如果需要文件存储设备标识符（可选） -->
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+      <!-- Android 11+ 文件访问，如果需要文件存储设备标识符（可选） -->
+      <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+              tools:ignore="ScopedStorage" />
+
+      <application>
+        ...
+      </application>
+
+</manifest>
+```
+
+#### 配置app/build.gradle，最小支持sdk 23
+
+```gradle
+
+ android {                                                                                     
+   defaultConfig {                                                                             
+     minSdkVersion 23                                                                          
+   }                                                                                           
+ } 
+
 ```
 
 > 提示：如果需要获取GAID，还需要设备支持谷歌服务
@@ -79,13 +102,21 @@ flutter pub get
 ### iOS
 
 如需获取广告标识符，请在 `ios/Runner/Info.plist` 添加：
-
+Privacy - Tracking Usage Description
 ```xml
 <key>NSUserTrackingUsageDescription</key>
 <string>本应用需要访问IDFA用于分析和个性化广告。</string>
 ```
 
 请检查此路径下是否有AppTrackingTransparency.framework `Xcode - Build Phases - Link Binary With Libraries 新增 AppTrackingTransparency.framework`
+
+iOS平台最低支持 14，请在`Podfile`中修改
+
+```podfile
+
+platform :ios, '14.0'
+
+```
 
 ---
 

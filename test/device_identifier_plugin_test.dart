@@ -123,6 +123,12 @@ class MockDeviceIdentifierPluginPlatform
     // TODO: implement getAdvertisingIdForiOS
     throw UnimplementedError();
   }
+  
+  @override
+  Future<void> setKeychainServiceAndAccount({String service = 'com.hicyh.getdeviceid.keychain', String keyAccount = 'device_uuid', String deviceIDAccount = 'ios_device_id'}) {
+    // TODO: implement setKeychainServiceAndAccount
+    throw UnimplementedError();
+  }
 }
 
 void main() {

@@ -67,6 +67,23 @@ public class DeviceIdentifierPlugin: NSObject, FlutterPlugin {
       Task {
         await requestTrackingAuthorization(result: result)
       }
+
+    case "setKeychainServiceAndAccount":
+      if let args = call.arguments as? [String: String],
+         let service = args["service"],
+         let keyAccount = args["keyUUIDAccount"],
+         let deviceIDAccount = args["deviceIDAccount"] {
+        Task { @MainActor in
+          await DeviceIdentifierManager.shared.setKeychainServiceAndAccount(
+            service: service,
+            keyAccount: keyAccount,
+            deviceIDAccount: deviceIDAccount
+          )
+          result(nil)
+        }
+      } else {
+        result(FlutterError(code: "INVALID_ARGUMENTS", message: "Invalid arguments for setKeychainServiceAndAccount", details: nil))
+      }
       
     default:
       result(FlutterMethodNotImplemented)
@@ -129,7 +146,7 @@ public class DeviceIdentifierPlugin: NSObject, FlutterPlugin {
   }
   
   private func clearCachedIdentifiers(result: @escaping FlutterResult) async {
-    let manager = DeviceIdentifierManager.shared
+    let manager = await DeviceIdentifierManager.shared
     let keychainCleared = await manager.clearKeychainUUID()
     let deviceIDCleared = await manager.clearIOSDeviceID()
     let cleared = keychainCleared && deviceIDCleared

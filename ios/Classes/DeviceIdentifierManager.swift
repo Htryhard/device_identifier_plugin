@@ -16,8 +16,9 @@ class DeviceIdentifierManager: ObservableObject {
     
     static let shared = DeviceIdentifierManager()
     
-    private let keychainService = "com.hicyh.getdeviceid.keychain"
-    private let keychainAccount = "device_uuid"
+    private var keychainService = "com.hicyh.getdeviceid.keychain"
+    private var keychainAccount = "device_uuid"
+    private var keychainDeviceIDAccount = "ios_device_id"
     
     // 日志系统
     private let logger = Logger(subsystem: "com.hicyh.getdeviceid", category: "DeviceIdentifier")
@@ -46,6 +47,16 @@ class DeviceIdentifierManager: ObservableObject {
     }
     
     // MARK: - 公开方法
+
+    /**
+     * 设置钥匙串服务和账户名称
+     * 用于自定义钥匙串存储位置
+     */
+    func setKeychainServiceAndAccount(service: String, keyAccount: String, deviceIDAccount: String) {
+        self.keychainService = service
+        self.keychainAccount = keyAccount
+        self.keychainDeviceIDAccount = deviceIDAccount
+    }
 
     /**
      * 获取设备基本信息
@@ -87,50 +98,49 @@ class DeviceIdentifierManager: ObservableObject {
      * 获取完整的设备标识符信息
      */
     func getDeviceIdentifier() async -> IOSDeviceIdentifier {
-        logger.info("🚀 开始获取设备标识符信息")
         
-        logger.info("📱 正在获取 IDFV...")
+        logger.info("  正在获取 IDFV...")
         let idfv = getIDFV()
-        logger.info("📱 IDFV 获取结果: \(idfv ?? "nil", privacy: .public)")
+        logger.info("  IDFV 获取结果: \(idfv ?? "nil", privacy: .public)")
         
-        logger.info("📺 正在获取 IDFA...")
+        logger.info(" 正在获取 IDFA...")
         let idfa = await getIDFA()
-        logger.info("📺 IDFA 获取结果: \(idfa ?? "nil", privacy: .public)")
+        logger.info(" IDFA 获取结果: \(idfa ?? "nil", privacy: .public)")
         
-        logger.info("🔐 正在获取 Keychain UUID...")
+        logger.info("正在获取 Keychain UUID...")
         let keychainUUID = getKeychainUUID()
-        logger.info("🔐 Keychain UUID 获取结果: \(keychainUUID ?? "nil", privacy: .public)")
+        logger.info("Keychain UUID 获取结果: \(keychainUUID ?? "nil", privacy: .public)")
         
-        logger.info("👆 正在获取设备指纹...")
+        logger.info(" 正在获取设备指纹...")
         let deviceFingerprint = getDeviceFingerprint()
-        logger.info("👆 设备指纹获取结果: \(deviceFingerprint ?? "nil", privacy: .public)")
+        logger.info(" 设备指纹获取结果: \(deviceFingerprint ?? "nil", privacy: .public)")
         
         let launchUUID = UUID().uuidString
-        logger.info("🎲 生成启动UUID: \(launchUUID, privacy: .public)")
+        logger.info("生成启动UUID: \(launchUUID, privacy: .public)")
         
-        logger.info("ℹ️ 正在获取设备信息...")
+        logger.info("正在获取设备信息...")
         let deviceInfo = await getDeviceInfo()
-        logger.info("ℹ️ 设备信息获取完成，包含 \(deviceInfo.count) 项")
+        logger.info("设备信息获取完成，包含 \(deviceInfo.count) 项")
         
-        logger.info("🔒 正在检查广告追踪授权状态...")
+        logger.info(" 正在检查广告追踪授权状态...")
         let isLimitAdTrackingEnabled = await getTrackingAuthorizationStatus() != .authorized
-        logger.info("🔒 限制广告追踪: \(isLimitAdTrackingEnabled)")
+        logger.info(" 限制广告追踪: \(isLimitAdTrackingEnabled)")
         
-        logger.info("🔗 正在生成组合ID...")
+        logger.info("  正在生成组合ID...")
         let combinedId = generateCombinedId(
             idfv: idfv,
             idfa: idfa,
             keychainUUID: keychainUUID,
             deviceFingerprint: deviceFingerprint
         )
-        logger.info("🔗 组合ID生成结果: \(combinedId ?? "nil", privacy: .public)")
+        logger.info("  组合ID生成结果: \(combinedId ?? "nil", privacy: .public)")
         
         // 获取iOS设备ID（类似Android ID）
-        logger.info("🍎 正在获取 iOS 设备ID...")
+        logger.info("  正在获取 iOS 设备ID...")
         let iosDeviceID = await getIOSDeviceID()
-        logger.info("🍎 iOS 设备ID获取结果: \(iosDeviceID, privacy: .public)")
+        logger.info("  iOS 设备ID获取结果: \(iosDeviceID, privacy: .public)")
         
-        logger.info("✅ 设备标识符信息获取完成")
+        logger.info(" 设备标识符信息获取完成")
         
         return IOSDeviceIdentifier(
             iosDeviceID: iosDeviceID,
@@ -161,43 +171,40 @@ class DeviceIdentifierManager: ObservableObject {
      * 这是iOS平台上最接近Android ID功能的标识符
      * 
      * 稳定性分析：
-     * - 卸载重装：不变 ✅（使用钥匙串存储）
-     * - 系统更新：不变 ✅
-     * - 应用更新：不变 ✅
-     * - 设备重启：不变 ✅
-     * - 恢复备份：不变 ✅
-     * - 设备重置：会变化 ✗
-     * - 用户手动清除：可能变化 ⚠️
+     * - 卸载重装：不变  （使用钥匙串存储）
+     * - 系统更新：不变  
+     * - 应用更新：不变  
+     * - 设备重启：不变  
+     * - 恢复备份：不变  
+     * - 设备重置：会变化
+     * - 用户手动清除：可能变化  
      * 
      * 实现策略：
      * 1. 优先使用钥匙串UUID（最稳定）
      * 2. 如果钥匙串失效，使用IDFV + 设备指纹组合
      * 3. 生成的ID会自动保存到钥匙串以确保一致性
      * 
-     * 这个方法提供了与Android ID相似的稳定性和唯一性
+     * 提供与Android ID相似的稳定性和唯一性
      */
     func getIOSDeviceID() async -> String {
-        logger.info("🍎 [iOS设备ID] 开始获取iOS设备ID")
-        
         // 尝试从钥匙串获取已存储的设备ID
-        logger.info("🍎 [iOS设备ID] 尝试从钥匙串获取已存储的设备ID")
+        logger.info("[iOS设备ID]  尝试从钥匙串获取已存储的设备ID")
         if let existingDeviceID = getStoredIOSDeviceID() {
-            logger.info("🍎 [iOS设备ID] ✅ 从钥匙串成功获取已存储的设备ID: \(existingDeviceID.prefix(8))...")
+            logger.info("[iOS设备ID]  从钥匙串成功获取已存储的设备ID: \(existingDeviceID.prefix(8))...")
             return existingDeviceID
         }
-        logger.info("🍎 [iOS设备ID] ⚠️ 钥匙串中没有找到已存储的设备ID，需要生成新的")
+        logger.info("[iOS设备ID]  钥匙串中没有找到已存储的设备ID，需要生成新的")
         
         // 如果没有存储的设备ID，生成新的
-        logger.info("🍎 [iOS设备ID] 正在生成新的设备ID...")
         let deviceIdentifier = await getBasicDeviceIdentifier()
         let newDeviceID = generateIOSDeviceID(from: deviceIdentifier)
-        logger.info("🍎 [iOS设备ID] ✅ 新设备ID生成成功: \(newDeviceID.prefix(8))...")
+        logger.info("  [iOS设备ID]  新设备ID生成成功: \(newDeviceID.prefix(8))...")
         
         // 保存到钥匙串
-        logger.info("🍎 [iOS设备ID] 正在保存新设备ID到钥匙串...")
+        logger.info("  [iOS设备ID] 正在保存新设备ID到钥匙串...")
         saveIOSDeviceID(newDeviceID)
         
-        logger.info("🍎 [iOS设备ID] ✅ iOS设备ID获取完成")
+        logger.info("  [iOS设备ID]  iOS设备ID获取完成")
         return newDeviceID
     }
     
@@ -208,26 +215,26 @@ class DeviceIdentifierManager: ObservableObject {
     private func getBasicDeviceIdentifier() async -> IOSDeviceIdentifier {
         logger.info("🔧 [基础标识符] 开始获取基础设备标识符信息（用于生成iOS设备ID）")
         
-        logger.info("📱 正在获取 IDFV...")
+        logger.info("  正在获取 IDFV...")
         let idfv = getIDFV()
-        logger.info("📱 IDFV 获取结果: \(idfv ?? "nil", privacy: .public)")
+        logger.info("  IDFV 获取结果: \(idfv ?? "nil", privacy: .public)")
         
-        logger.info("📺 正在获取 IDFA...")
+        logger.info(" 正在获取 IDFA...")
         let idfa = await getIDFA()
-        logger.info("📺 IDFA 获取结果: \(idfa ?? "nil", privacy: .public)")
+        logger.info(" IDFA 获取结果: \(idfa ?? "nil", privacy: .public)")
         
-        logger.info("👆 正在获取设备指纹...")
+        logger.info(" 正在获取设备指纹...")
         let deviceFingerprint = getDeviceFingerprint()
-        logger.info("👆 设备指纹获取结果: \(deviceFingerprint ?? "nil", privacy: .public)")
+        logger.info(" 设备指纹获取结果: \(deviceFingerprint ?? "nil", privacy: .public)")
         
-        logger.info("🔒 正在检查广告追踪授权状态...")
+        logger.info(" 正在检查广告追踪授权状态...")
         let isLimitAdTrackingEnabled = await getTrackingAuthorizationStatus() != .authorized
-        logger.info("🔒 限制广告追踪: \(isLimitAdTrackingEnabled)")
+        logger.info(" 限制广告追踪: \(isLimitAdTrackingEnabled)")
         
-        logger.info("🔧 [基础标识符] ✅ 基础设备标识符信息获取完成")
+        logger.info("🔧 [基础标识符]  基础设备标识符信息获取完成")
         
         return IOSDeviceIdentifier(
-            iosDeviceID: "", // 这里留空，因为我们正在生成它
+            iosDeviceID: "", // 这里留空，因为正在生成它
             idfv: idfv,
             idfa: idfa,
             keychainUUID: nil, // iOS设备ID生成不需要keychain UUID
@@ -293,38 +300,37 @@ class DeviceIdentifierManager: ObservableObject {
      * 保存iOS设备ID到钥匙串
      */
     private func saveIOSDeviceID(_ deviceID: String) {
-        logger.info("💾 [钥匙串保存] 开始保存iOS设备ID到钥匙串")
-        logger.info("💾 [钥匙串保存] 设备ID: \(deviceID.prefix(8))...")
+        logger.info("  [钥匙串保存] 设备ID: \(deviceID.prefix(8))...")
         
         guard let data = deviceID.data(using: .utf8) else {
-            logger.error("💾 [钥匙串保存] ❌ 设备ID转换为Data失败")
+            logger.error("  [钥匙串保存]  设备ID转换为Data失败")
             return
         }
         
-        logger.info("💾 [钥匙串保存] ✅ 设备ID转换为Data成功，数据长度: \(data.count) 字节")
+        logger.info("  [钥匙串保存]  设备ID转换为Data成功，数据长度: \(data.count) 字节")
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: "ios_device_id",
+            kSecAttrAccount as String: keychainDeviceIDAccount,
             kSecValueData as String: data
         ]
         
         // 先删除可能存在的旧数据
-        logger.info("💾 [钥匙串保存] 正在删除可能存在的旧数据...")
+        logger.info("  [钥匙串保存] 正在删除可能存在的旧数据...")
         let deleteStatus = SecItemDelete(query as CFDictionary)
-        logger.info("💾 [钥匙串保存] 删除操作状态码: \(deleteStatus)")
+        logger.info("  [钥匙串保存] 删除操作状态码: \(deleteStatus)")
         
         // 添加新数据
-        logger.info("💾 [钥匙串保存] 正在添加新数据...")
+        logger.info("  [钥匙串保存] 正在添加新数据...")
         let addStatus = SecItemAdd(query as CFDictionary, nil)
-        logger.info("💾 [钥匙串保存] 添加操作状态码: \(addStatus)")
+        logger.info("  [钥匙串保存] 添加操作状态码: \(addStatus)")
         
         if addStatus == errSecSuccess {
-            logger.info("💾 [钥匙串保存] ✅ iOS设备ID保存成功")
+            logger.info("  [钥匙串保存]  iOS设备ID保存成功")
         } else {
             let errorMessage = SecCopyErrorMessageString(addStatus, nil) as String? ?? "未知错误"
-            logger.error("💾 [钥匙串保存] ❌ iOS设备ID保存失败: \(errorMessage) (状态码: \(addStatus))")
+            logger.error("  [钥匙串保存]  iOS设备ID保存失败: \(errorMessage) (状态码: \(addStatus))")
         }
     }
     
@@ -371,11 +377,11 @@ class DeviceIdentifierManager: ObservableObject {
     /**
      * 清除iOS设备ID（用于测试）
      */
-    func clearIOSDeviceID() -> Bool {
+    func clearIOSDeviceID() async -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: "ios_device_id"
+            kSecAttrAccount as String: keychainDeviceIDAccount
         ]
         
         let status = SecItemDelete(query as CFDictionary)
@@ -384,12 +390,21 @@ class DeviceIdentifierManager: ObservableObject {
     
     /**
      * 请求广告追踪权限
+     * 只有在.notDetermined状态才系统才会弹窗请求权限，其他状态无法改变用户授权状态
      */
     func requestTrackingAuthorization() async -> ATTrackingManager.AuthorizationStatus {
-        if #available(iOS 14.5, *) {
-            return await ATTrackingManager.requestTrackingAuthorization()
+        let status = await getTrackingAuthorizationStatus()
+        if status == .notDetermined {
+            logger.info("请求广告追踪授权")
+            if #available(iOS 14.5, *) {
+                return await ATTrackingManager.requestTrackingAuthorization()
+            } else {
+                // iOS 14.5 以下默认视为已授权
+                return .authorized
+            }
         } else {
-            return .authorized
+            logger.info("广告追踪授权状态已确定: \(status.rawValue)")
+            return status
         }
     }
     
@@ -409,7 +424,7 @@ class DeviceIdentifierManager: ObservableObject {
      * 获取 IDFV (Identifier For Vendor)
      *
      * 稳定性分析：
-     * - 卸载重装：如果设备上没有同一开发者的其他应用，会变化 ⚠️
+     * - 卸载重装：如果设备上没有同一开发者的其他应用，会变化  
      * - 如果有同一开发者的其他应用，则不变 ✓
      * - 系统更新：不变 ✓
      * - 应用更新：不变 ✓
@@ -423,15 +438,15 @@ class DeviceIdentifierManager: ObservableObject {
      * 推荐使用场景：用户行为分析、应用内统计
      */
     func getIDFV() -> String? {
-        logger.info("📱 [IDFV] 开始获取IDFV")
+        logger.info("  [IDFV] 开始获取IDFV")
         
         let vendorID = UIDevice.current.identifierForVendor
         if let vendorID = vendorID {
             let idfv = vendorID.uuidString
-            logger.info("📱 [IDFV] ✅ IDFV获取成功: \(idfv)")
+            logger.info("  [IDFV]  IDFV获取成功: \(idfv)")
             return idfv
         } else {
-            logger.error("📱 [IDFV] ❌ IDFV获取失败，identifierForVendor为nil")
+            logger.error("  [IDFV]  IDFV获取失败，identifierForVendor为nil")
             return nil
         }
     }
@@ -466,59 +481,64 @@ class DeviceIdentifierManager: ObservableObject {
      * 推荐使用场景：广告归因、用户获取分析（需要合规使用）
      */
     func getIDFA() async -> String? {
-        logger.info("📺 [IDFA] 开始获取IDFA")
+        logger.info(" [IDFA] 开始获取IDFA")
         
-        logger.info("📺 [IDFA] 正在检查广告追踪授权状态...")
+        logger.info(" [IDFA] 正在检查广告追踪授权状态...")
         let authorizationStatus = await getTrackingAuthorizationStatus()
-        logger.info("📺 [IDFA] 广告追踪授权状态: \(authorizationStatus.rawValue)")
+        logger.info(" [IDFA] 广告追踪授权状态: \(authorizationStatus.rawValue)")
         
         if authorizationStatus == .authorized {
-            logger.info("📺 [IDFA] ✅ 已获得广告追踪授权，正在获取IDFA...")
+            logger.info(" [IDFA]  已获得广告追踪授权，正在获取IDFA...")
             let idfa = ASIdentifierManager.shared().advertisingIdentifier.uuidString
-            logger.info("📺 [IDFA] 原始IDFA值: \(idfa)")
+            logger.info(" [IDFA] 原始IDFA值: \(idfa)")
             
             // 检查是否为全零UUID
             if idfa != "00000000-0000-0000-0000-000000000000" {
-                logger.info("📺 [IDFA] ✅ IDFA获取成功: \(idfa)")
+                logger.info(" [IDFA]  IDFA获取成功: \(idfa)")
                 return idfa
             } else {
-                logger.info("📺 [IDFA] ⚠️ IDFA为全零UUID，可能用户限制了广告追踪")
+                logger.info(" [IDFA]  IDFA为全零UUID，可能用户限制了广告追踪")
             }
         } else {
-            logger.info("📺 [IDFA] ❌ 未获得广告追踪授权，无法获取IDFA")
+            logger.info(" [IDFA]  未获得广告追踪授权，无法获取IDFA")
         }
         
-        logger.info("📺 [IDFA] 返回nil")
+        logger.info(" [IDFA] 返回nil")
         return nil
     }
     
     /**
      * 获取广告追踪授权状态
+     * 用户尚未做出选择 .notDetermined、
+     * 用户已授权 .authorized、
+     * 用户拒绝授权 .denied、
+     * 受限制（例如家长控制） .restricted
      */
+    @available(iOS, deprecated: 14.0, message: "Use ATTrackingManager instead")
     private func getTrackingAuthorizationStatus() async -> ATTrackingManager.AuthorizationStatus {
-        logger.info("🔒 [授权状态] 开始检查广告追踪授权状态")
+        logger.info(" [授权状态] 开始检查广告追踪授权状态")
         
         if #available(iOS 14.5, *) {
             let status = ATTrackingManager.trackingAuthorizationStatus
-            logger.info("🔒 [授权状态] iOS 14.5+ 授权状态: \(status.rawValue)")
+            logger.info(" [授权状态] iOS 14.5+ 授权状态: \(status.rawValue)")
             switch status {
             case .notDetermined:
-                logger.info("🔒 [授权状态] 用户尚未做出选择")
+                logger.info(" [授权状态] 用户尚未做出选择")
             case .restricted:
-                logger.info("🔒 [授权状态] 受限制（例如家长控制）")
+                logger.info(" [授权状态] 受限制（例如家长控制）")
             case .denied:
-                logger.info("🔒 [授权状态] 用户拒绝授权")
+                logger.info(" [授权状态] 用户拒绝授权")
             case .authorized:
-                logger.info("🔒 [授权状态] 用户已授权")
+                logger.info(" [授权状态] 用户已授权")
             @unknown default:
-                logger.info("🔒 [授权状态] 未知状态")
+                logger.info(" [授权状态] 未知状态")
             }
             return status
         } else {
             // iOS 14.5 之前版本
             let isEnabled = ASIdentifierManager.shared().isAdvertisingTrackingEnabled
             let status: ATTrackingManager.AuthorizationStatus = isEnabled ? .authorized : .denied
-            logger.info("🔒 [授权状态] iOS 14.5- 追踪启用: \(isEnabled), 转换状态: \(status.rawValue)")
+            logger.info(" [授权状态] iOS 14.5- 追踪启用: \(isEnabled), 转换状态: \(status.rawValue)")
             return status
         }
     }
@@ -693,12 +713,12 @@ class DeviceIdentifierManager: ObservableObject {
      * 获取设备指纹
      *
      * 稳定性分析：
-     * - 卸载重装：不变 ✓（基于硬件信息）
-     * - 系统更新：通常不变 ✓
-     * - 应用更新：不变 ✓
-     * - 设备重启：不变 ✓
-     * - 硬件变化：会变化 ✗
-     * - 系统重置：会变化 ✗
+     * - 卸载重装：不变
+     * - 系统更新：通常不变
+     * - 应用更新：不变
+     * - 设备重启：不变
+     * - 硬件变化：会变化
+     * - 系统重置：会变化
      *
      * 包含的信息：
      * - 设备型号标识符
@@ -706,75 +726,56 @@ class DeviceIdentifierManager: ObservableObject {
      * - 屏幕尺寸和像素密度
      * - 时区信息
      * - 语言设置
-     *
-     * 特殊情况：
-     * - 模拟器可能返回通用值
-     * - 相同型号设备指纹相似
-     * - 越狱设备可能修改系统信息
-     * - 某些信息可能受隐私限制
-     *
-     * 优点：
-     * - 不需要任何权限
-     * - 相对稳定
-     * - 实现简单
-     * - 兼容所有iOS版本
-     *
-     * 缺点：
-     * - 隐私争议
-     * - 可能不够唯一
-     * - 系统更新可能影响
-     *
-     * 推荐使用场景：辅助设备识别、反作弊
      */
     private func getDeviceFingerprint() -> String? {
-        logger.info("👆 [设备指纹] 开始生成设备指纹")
+        logger.info(" [设备指纹] 开始生成设备指纹")
         
         var components: [String] = []
         
         // 设备型号
         let deviceModelString = deviceModel()
-        logger.info("👆 [设备指纹] 设备型号: \(deviceModelString)")
+        logger.info(" [设备指纹] 设备型号: \(deviceModelString)")
         components.append(deviceModelString)
         
         // 系统版本
         let systemVersion = UIDevice.current.systemVersion
-        logger.info("👆 [设备指纹] 系统版本: \(systemVersion)")
+        logger.info(" [设备指纹] 系统版本: \(systemVersion)")
         components.append(systemVersion)
         
         // 屏幕信息
         let screen = UIScreen.main
         let screenSize = "\(Int(screen.bounds.width))x\(Int(screen.bounds.height))"
         let screenScale = "\(screen.scale)"
-        logger.info("👆 [设备指纹] 屏幕尺寸: \(screenSize)")
-        logger.info("👆 [设备指纹] 屏幕缩放: \(screenScale)")
+        logger.info(" [设备指纹] 屏幕尺寸: \(screenSize)")
+        logger.info(" [设备指纹] 屏幕缩放: \(screenScale)")
         components.append(screenSize)
         components.append(screenScale)
         
         // 时区
         let timezone = TimeZone.current.identifier
-        logger.info("👆 [设备指纹] 时区: \(timezone)")
+        logger.info(" [设备指纹] 时区: \(timezone)")
         components.append(timezone)
         
         // 语言设置
         if #available(iOS 16, *) {
             let language = Locale.current.language.languageCode?.identifier ?? "unknown"
-            logger.info("👆 [设备指纹] 语言(iOS16+): \(language)")
+            logger.info(" [设备指纹] 语言(iOS16+): \(language)")
             components.append(language)
         } else {
             if let language = Locale.current.languageCode {
-                logger.info("👆 [设备指纹] 语言(iOS16-): \(language)")
+                logger.info(" [设备指纹] 语言(iOS16-): \(language)")
                 components.append(language)
             } else {
-                logger.info("👆 [设备指纹] ⚠️ 无法获取语言代码")
+                logger.info(" [设备指纹]  无法获取语言代码")
             }
         }
         
         // 生成哈希
         let fingerprintInput = components.joined(separator: "|")
-        logger.info("👆 [设备指纹] 指纹输入: \(fingerprintInput)")
+        logger.info(" [设备指纹] 指纹输入: \(fingerprintInput)")
         
         let fingerprint = sha256(fingerprintInput)
-        logger.info("👆 [设备指纹] ✅ 设备指纹生成成功: \(fingerprint)")
+        logger.info(" [设备指纹]  设备指纹生成成功: \(fingerprint)")
         return fingerprint
     }
     
@@ -782,9 +783,9 @@ class DeviceIdentifierManager: ObservableObject {
      * 生成组合ID
      *
      * 稳定性分析：
-     * - 卸载重装：取决于组成部分 ⚠️
-     * - 系统更新：通常不变 ✓
-     * - 用户操作：可能变化 ⚠️
+     * - 卸载重装：取决于组成部分  
+     * - 系统更新：通常不变
+     * - 用户操作：可能变化  
      *
      * 组合策略：
      * - 优先使用钥匙串UUID
@@ -796,65 +797,52 @@ class DeviceIdentifierManager: ObservableObject {
      * - 如果所有标识符都无法获取，生成随机UUID
      * - 使用SHA-256哈希确保一致性
      * - 不同的标识符组合会产生不同的结果
-     *
-     * 优点：
-     * - 综合多个标识符的优势
-     * - 降低单一标识符失效的风险
-     * - 可以根据需要调整组合策略
-     *
-     * 缺点：
-     * - 复杂度较高
-     * - 调试困难
-     * - 稳定性取决于组成部分
-     *
-     * 推荐使用场景：综合设备识别、多重验证
      */
     private func generateCombinedId(idfv: String?, idfa: String?, keychainUUID: String?, deviceFingerprint: String?) -> String? {
-        logger.info("🔗 [组合ID] 开始生成组合ID")
         
         var identifiers: [String] = []
         
         if let keychainUUID = keychainUUID, !keychainUUID.isEmpty {
-            logger.info("🔗 [组合ID] ✅ 添加钥匙串UUID: \(keychainUUID)")
+            logger.info("  [组合ID]  添加钥匙串UUID: \(keychainUUID)")
             identifiers.append(keychainUUID)
         } else {
-            logger.info("🔗 [组合ID] ⚠️ 钥匙串UUID不可用")
+            logger.info("  [组合ID]  钥匙串UUID不可用")
         }
         
         if let idfv = idfv, !idfv.isEmpty {
-            logger.info("🔗 [组合ID] ✅ 添加IDFV: \(idfv)")
+            logger.info("  [组合ID]  添加IDFV: \(idfv)")
             identifiers.append(idfv)
         } else {
-            logger.info("🔗 [组合ID] ⚠️ IDFV不可用")
+            logger.info("  [组合ID]  IDFV不可用")
         }
         
         if let deviceFingerprint = deviceFingerprint, !deviceFingerprint.isEmpty {
-            logger.info("🔗 [组合ID] ✅ 添加设备指纹: \(deviceFingerprint.prefix(16))...")
+            logger.info("  [组合ID]  添加设备指纹: \(deviceFingerprint.prefix(16))...")
             identifiers.append(deviceFingerprint)
         } else {
-            logger.info("🔗 [组合ID] ⚠️ 设备指纹不可用")
+            logger.info("  [组合ID]  设备指纹不可用")
         }
         
         if let idfa = idfa, !idfa.isEmpty {
-            logger.info("🔗 [组合ID] ✅ 添加IDFA: \(idfa)")
+            logger.info("  [组合ID]  添加IDFA: \(idfa)")
             identifiers.append(idfa)
         } else {
-            logger.info("🔗 [组合ID] ⚠️ IDFA不可用")
+            logger.info("  [组合ID]  IDFA不可用")
         }
         
-        logger.info("🔗 [组合ID] 可用标识符数量: \(identifiers.count)")
+        logger.info("  [组合ID] 可用标识符数量: \(identifiers.count)")
         
         if !identifiers.isEmpty {
             let combinedString = identifiers.joined(separator: "-")
-            logger.info("🔗 [组合ID] 组合字符串: \(combinedString)")
+            logger.info("  [组合ID] 组合字符串: \(combinedString)")
             let hashedId = sha256(combinedString)
-            logger.info("🔗 [组合ID] ✅ 组合ID生成成功: \(hashedId)")
+            logger.info("  [组合ID]  组合ID生成成功: \(hashedId)")
             return hashedId
         }
         
-        logger.warning("🔗 [组合ID] ⚠️ 所有标识符都不可用，生成随机UUID")
+        logger.warning("  [组合ID]  所有标识符都不可用，生成随机UUID")
         let randomUUID = UUID().uuidString
-        logger.info("🔗 [组合ID] 随机UUID: \(randomUUID)")
+        logger.info("  [组合ID] 随机UUID: \(randomUUID)")
         return randomUUID
     }
     

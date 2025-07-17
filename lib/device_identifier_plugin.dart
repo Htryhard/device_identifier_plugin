@@ -34,12 +34,6 @@ class DeviceIdentifierPlugin {
     _androidFolderName = androidFolderName;
   }
 
-  // DeviceIdentifierPlugin({
-  //   String androidFileName = 'device_id.txt',
-  //   String androidFolderName = 'DeviceIdentifier',
-  // }) : _androidFileName = androidFileName,
-  //      _androidFolderName = androidFolderName;
-
   /// 获取平台版本信息
   Future<String?> getPlatformVersion() {
     return DeviceIdentifierPluginPlatform.instance.getPlatformVersion();
@@ -83,8 +77,12 @@ class DeviceIdentifierPlugin {
       if (advertisingId != null && advertisingId.isNotEmpty) {
         return advertisingId;
       }
-      // TODO 最后尝试获取其他Android标识符
-      return "";
+      // 最后使用设备指纹获取Android标识符，这个属性必定会有值
+      final supperIdMap =
+          await DeviceIdentifierPluginPlatform.instance
+              .getSupportedIdentifiers();
+      final deviceFingerprint = supperIdMap['deviceFingerprint'] as String?;
+      return deviceFingerprint ?? "";
     } else if (Platform.isIOS) {
       // 1、优先获取钥匙串UUID
       final hasKeychainUUID =
@@ -109,10 +107,14 @@ class DeviceIdentifierPlugin {
       if (idfa != null && idfa.isNotEmpty) {
         return idfa;
       }
-      // TODO 最后尝试获取其他iOS标识符
-      return "";
+      // 最后获取iOS设备ID，这个ID必定会返回值
+      final supperIdMap =
+          await DeviceIdentifierPluginPlatform.instance
+              .getSupportedIdentifiers();
+      final iosDeviceId = supperIdMap['iosDeviceID'] as String?;
+      return iosDeviceId ?? "";
     } else {
-      throw UnsupportedError('Unsupported platform');
+      throw UnsupportedError('Unsupported platform[getBestDeviceIdentifier()]');
     }
   }
 
@@ -166,19 +168,20 @@ class DeviceIdentifierPlugin {
   /// - androidId: Android ID（工厂重置、刷机、切换用户时会变化，卸载重装不变）
   /// - advertisingId: 广告ID（用户可手动重置，约每月自动重置一次，卸载重装不变）
   /// - installUuid: 安装UUID（每次安装都会生成新的，卸载重装必然变化）
-  /// - deviceFingerprint: 设备指纹（基于硬件信息，相对稳定，系统更新或硬件变化时可能变化）
-  /// - buildSerial: 设备序列号（硬件级别标识符，除非更换设备否则不变）
-  /// - combinedId: 组合ID（多个标识符的组合哈希，变化取决于组成部分）
+  /// - deviceFingerprint: 设备指纹（基于主板名称、品牌、设备名、硬件名、设备制造商、设备型号、产品名、系统版本号、SDK 版本号、
+  ///                      屏幕宽度（像素）、屏幕高度（像素）、屏幕密度（DPI）、支持的 CPU 架构编码后生成,系统更新或硬件变化时可能变化）
+  /// - buildSerial: 设备序列号（硬件级别标识符，除非更换设备否则不变，但如果不是系统应该或者拥有系统签名，都无法再获取到）
+  /// - combinedId: 组合ID（基于androidId、advertisingId、installUuid、deviceFingerprint组合生成，变化取决于组成部分）
   /// - isLimitAdTrackingEnabled: 是否限制广告追踪（用户设置，影响广告ID的使用）
   ///
   /// iOS会返回：
-  /// - iosDeviceID: iOS设备ID（类似Android ID的概念，最推荐用于统计）
+  /// - iosDeviceID: iOS设备ID（使用idfv、deviceFingerprint、idfa、getDeviceInfo()生成的ID，如果这几个属性都为空，则是用当前时间戳生成。生成后将保存在钥匙串中以便下次使用）
   /// - idfv: IDFV（同一开发者应用共享，卸载重装时可能变化）
   /// - idfa: IDFA（广告标识符，iOS 14.5+ 需要用户授权，卸载重装不变）
   /// - keychainUUID: Keychain UUID（存储在钥匙串中，最稳定的标识符）
-  /// - deviceFingerprint: 设备指纹（基于硬件信息生成的相对稳定标识符）
+  /// - deviceFingerprint: 设备指纹（基于硬件信息生成的相对稳定标识符，用于生成指纹的信息：设备型号标识符、系统版本信息、屏幕尺寸和像素密度、时区信息、语言设置）
   /// - launchUUID: 应用启动UUID（每次应用启动生成，测试用）
-  /// - combinedId: 组合ID（多个标识符的组合哈希）
+  /// - combinedId: 组合ID（多个标识符的组合哈希，用于组合的信息有：idfv、keychainUUID、deviceFingerprint、idfa，如果这几个信息都为空，则随机生成ID）
   /// - isLimitAdTrackingEnabled: 是否限制广告追踪（ATT授权状态）
   Future<Map<String, dynamic>> getSupportedIdentifiers() {
     return DeviceIdentifierPluginPlatform.instance.getSupportedIdentifiers();
@@ -192,7 +195,9 @@ class DeviceIdentifierPlugin {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getAdvertisingIdForiOS();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [getAdvertisingIdForiOS()]',
+      );
     }
   }
 
@@ -213,7 +218,38 @@ class DeviceIdentifierPlugin {
       return DeviceIdentifierPluginPlatform.instance
           .requestTrackingAuthorization();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [requestTrackingAuthorization()]',
+      );
+    }
+  }
+
+  /// 设置钥匙串的服务和账户名称
+  /// iOS专属接口
+  /// 用于自定义钥匙串存储位置
+  /// [service] 钥匙串服务名称，默认为 'com.hicyh.getdeviceid.keychain'
+  /// [keyAccount] 钥匙串账户名称，默认为 'device_uuid'
+  /// [deviceIDAccount] 钥匙串设备ID账户名称，默认为 'ios_device_id'
+  /// 如果不设置则使用默认值
+  /// 如果需要在iOS中使用钥匙串存储设备标识符，
+  /// 请在调用其他钥匙串相关方法之前先调用此方法设置服务和账户名称
+  /// 注意：此方法仅在iOS平台上有效，Android平台不支持钥匙串存储
+  Future<void> setKeychainServiceAndAccount({
+    String service = 'com.hicyh.getdeviceid.keychain',
+    String keyAccount = 'device_uuid',
+    String deviceIDAccount = 'ios_device_id',
+  }) {
+    if (Platform.isIOS) {
+      return DeviceIdentifierPluginPlatform.instance
+          .setKeychainServiceAndAccount(
+            service: service,
+            keyAccount: keyAccount,
+            deviceIDAccount: deviceIDAccount,
+          );
+    } else {
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [setKeychainServiceAndAccount()]',
+      );
     }
   }
 
@@ -224,7 +260,9 @@ class DeviceIdentifierPlugin {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getAppleIDFV();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [getAppleIDFV()]',
+      );
     }
   }
 
@@ -236,7 +274,9 @@ class DeviceIdentifierPlugin {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getKeychainUUID();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [getKeychainUUID()]',
+      );
     }
   }
 
@@ -247,7 +287,9 @@ class DeviceIdentifierPlugin {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.hasKeychainUUID();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [hasKeychainUUID()]',
+      );
     }
   }
 
@@ -258,7 +300,9 @@ class DeviceIdentifierPlugin {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.generateKeychainUUID();
     } else {
-      throw UnsupportedError('This method is only supported on iOS platforms');
+      throw UnsupportedError(
+        'This method is only supported on iOS platforms [generateKeychainUUID()]',
+      );
     }
   }
 
@@ -271,7 +315,7 @@ class DeviceIdentifierPlugin {
           .getAdvertisingIdForAndroid();
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [getAdvertisingIdForAndroid()]',
       );
     }
   }
@@ -283,7 +327,7 @@ class DeviceIdentifierPlugin {
       return DeviceIdentifierPluginPlatform.instance.getAndroidId();
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [getAndroidId()]',
       );
     }
   }
@@ -317,7 +361,7 @@ class DeviceIdentifierPlugin {
       );
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [getFileDeviceIdentifier()]',
       );
     }
   }
@@ -353,7 +397,7 @@ class DeviceIdentifierPlugin {
           );
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [generateFileDeviceIdentifier()]',
       );
     }
   }
@@ -379,7 +423,7 @@ class DeviceIdentifierPlugin {
       );
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [deleteFileDeviceIdentifier()]',
       );
     }
   }
@@ -402,7 +446,7 @@ class DeviceIdentifierPlugin {
       );
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [hasFileDeviceIdentifier()]',
       );
     }
   }
@@ -417,7 +461,7 @@ class DeviceIdentifierPlugin {
           .requestExternalStoragePermission();
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [requestExternalStoragePermission()]',
       );
     }
   }
@@ -430,7 +474,7 @@ class DeviceIdentifierPlugin {
           .hasExternalStoragePermission();
     } else {
       throw UnsupportedError(
-        'This method is only supported on Android platforms',
+        'This method is only supported on Android platforms [hasExternalStoragePermission()]',
       );
     }
   }

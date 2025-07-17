@@ -54,26 +54,50 @@ flutter pub get
 
 ### Android
 
+#### Configure AndroidManifest.xml
+
 Add the following permissions to your `android/app/src/main/AndroidManifest.xml` as needed:
 
 ```xml
-<!-- Basic permissions -->
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+     <!-- Note, don't forget the line xmlns:tools='xxxxx' above -->
+      <!-- Basic permissions -->
+      <uses-permission android:name="android.permission.INTERNET" />
+      <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-<!-- For serial number (optional) -->
-<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+      <!-- For serial number (optional) -->
+      <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-<!-- If you need to obtain a Google Advertising ID (optional) -->
-<uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+      <!-- If you need to obtain a Google Advertising ID (optional) -->
+      <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-<!-- For file-based ID (optional) -->
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+      <!-- For file-based ID (optional) -->
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+      <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-<!-- Android 11+ File access, if file storage device identifier is required (optional) -->
-<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+      <!-- Android 11+ File access, if file storage device identifier is required (optional) -->
+      <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+              tools:ignore="ScopedStorage" />
+
+
+      <application>
+        ...
+      </application>
+
+</manifest>
+```
+
+#### Configure app/build.gradle, minimum supported SDK 23
+
+```gradle
+
+ android {                                                                                     
+   defaultConfig {                                                                             
+     minSdkVersion 23                                                                          
+   }                                                                                           
+ } 
+
 ```
 
 > Tip: If you need to obtain GAID, your device must support Google services
@@ -82,6 +106,8 @@ Add the following permissions to your `android/app/src/main/AndroidManifest.xml`
 
 Add the following to your `ios/Runner/Info.plist` for advertising tracking:
 
+Privacy - Tracking Usage Description
+
 ```xml
 <key>NSUserTrackingUsageDescription</key>
 <string>This app would like to access IDFA for analytics and personalized ads.</string>
@@ -89,6 +115,14 @@ Add the following to your `ios/Runner/Info.plist` for advertising tracking:
 
 Please check whether there is an AppTrackingTransparency.framework in this path:
 `Xcode - Build Phases - Link Binary With Libraries add AppTrackingTransparency.framework`
+
+The minimum supported version for iOS is 14. Please modify it in `Podfile`
+
+```podfile
+
+platform :ios, '14.0'
+
+```
 
 ---
 

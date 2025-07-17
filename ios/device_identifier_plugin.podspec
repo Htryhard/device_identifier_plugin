@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'device_identifier_plugin'
-  s.version          = '0.0.1'
+  s.version          = '0.0.7'
   s.summary          = 'A Flutter plugin for getting device unique identifiers on Android and iOS.'
   s.description      = <<-DESC
 A comprehensive Flutter plugin that provides multiple methods to obtain device unique identifiers.

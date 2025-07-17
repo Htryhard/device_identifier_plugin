@@ -7,9 +7,19 @@ import 'package:device_identifier_plugin/device_identifier_plugin.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  DeviceIdentifierPlugin.instance.setAndroidFileStorage(
-    androidFileName: 'device_id',
-  );
+
+  if (Platform.isAndroid) {
+    // 设置Android平台的文件存储名称(如果需要存储文件标识ID的话)
+    DeviceIdentifierPlugin.instance.setAndroidFileStorage(
+      androidFileName: 'device_id',
+    );
+  } else if (Platform.isIOS) {
+    // 设置iOS平台的Keychain服务名称
+    // 这将用于存储Keychain UUID等信息
+    DeviceIdentifierPlugin.instance.setKeychainServiceAndAccount(
+      service: 'com.example.device_identifier_plugin',
+    );
+  }
   runApp(const MyApp());
 }
 
@@ -40,11 +50,8 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
     try {
       platformVersion =
           await _deviceIdentifierPlugin.getPlatformVersion() ??
@@ -52,15 +59,114 @@ class _MyAppState extends State<MyApp> {
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
-
     setState(() {
       _platformVersion = platformVersion;
     });
+  }
+
+  /// API示例
+  void _apiExample() {
+    // 获取支持的设备标识符，具体支持哪些请点开查看接口注释
+    _deviceIdentifierPlugin.getSupportedIdentifiers().then((value) {
+      print('Device Identifier: $value');
+    });
+
+    // 获取最优标识符
+    _deviceIdentifierPlugin.getBestDeviceIdentifier().then((value) {
+      print('Best Device Identifier: $value');
+    });
+
+    // 检查是否为模拟器
+    _deviceIdentifierPlugin.isEmulator().then((value) {
+      print('Is Emulator: $value');
+    });
+
+    // 获取设备信息，具体有哪些信息请点开查看接口注释
+    _deviceIdentifierPlugin.getDeviceInfo().then((value) {
+      print('Device Info: $value');
+    });
+
+    // 获取文件存储标识符（Android特有）
+    if (Platform.isAndroid) {
+      // 生成并返回文件存储标识符
+      _deviceIdentifierPlugin.generateFileDeviceIdentifier().then((value) {
+        print('File-Based Device Identifier: $value');
+      });
+
+      // 获取文件存储标识符，如果没有生成过则返回null
+      _deviceIdentifierPlugin.getFileDeviceIdentifier().then((value) {
+        print('File-Based Device Identifier: $value');
+      });
+
+      // 是否存在文件标识符ID
+      _deviceIdentifierPlugin.hasFileDeviceIdentifier().then((value) {
+        print('Has File-Based Device Identifier: $value');
+      });
+
+      // 删除文件存储标识符
+      _deviceIdentifierPlugin.deleteFileDeviceIdentifier().then((value) {
+        print('File-Based Device Identifier deleted: $value');
+      });
+
+      // 检查是否有外部存储权限
+      _deviceIdentifierPlugin.hasExternalStoragePermission().then((value) {
+        print('Has External Storage Permission: $value');
+      });
+
+      // 请求外部存储权限（请求之前最好弹窗提示用户）
+      _deviceIdentifierPlugin.requestExternalStoragePermission().then((value) {
+        print('Requested External Storage Permission');
+      });
+
+      // 获取广告ID，需要谷歌服务的支持，并且需要添加相关权限
+      // 在AndroidManifest.xml中添加：
+      // <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+      _deviceIdentifierPlugin.getAdvertisingIdForAndroid().then((value) {
+        print('Advertising ID: $value');
+      });
+
+      // 获取Android ID，不一定会有值
+      _deviceIdentifierPlugin.getAndroidId().then((value) {
+        print('Android ID: $value');
+      });
+    }
+
+    if (Platform.isIOS) {
+      // 获取IDFA（广告追踪标识符）
+      // 注意：需要在Info.plist中添加NSUserTrackingUsageDescription描述
+      // 并且需要用户授权才能获取IDFA
+      _deviceIdentifierPlugin.getAdvertisingIdForiOS().then((value) {
+        print('IDFA: $value');
+      });
+
+      // 请求获取广告追踪授权
+      // 注意：需要在Info.plist中添加NSUserTrackingUsageDescription描述
+      // 返回的状态可能是 'authorized', 'denied', 'restricted', 'notDetermined'
+      _deviceIdentifierPlugin.requestTrackingAuthorization().then((status) {
+        print('Tracking Authorization Status: $status');
+      });
+
+      // 获取IDFV（应用内设备标识符）
+      _deviceIdentifierPlugin.getAppleIDFV().then((value) {
+        print('IDFV: $value');
+      });
+
+      // 获取Keychain UUID，如果没有生成过则返回null
+      _deviceIdentifierPlugin.getKeychainUUID().then((value) {
+        print('Keychain UUID: $value');
+      });
+
+      // 生成并返回Keychain UUID
+      _deviceIdentifierPlugin.generateKeychainUUID().then((value) {
+        print('Keychain UUID: $value');
+      });
+
+      // 是否存在Keychain UUID
+      _deviceIdentifierPlugin.hasKeychainUUID().then((value) {
+        print('Has Keychain UUID: $value');
+      });
+    }
   }
 
   // 获取所有设备信息
@@ -76,7 +182,7 @@ class _MyAppState extends State<MyApp> {
         'Best Device Identifier: runTimeType=${bestId.runtimeType}  value=$bestId',
       );
 
-      // 获取完整设备标识符
+      // 获取支持的设备标识符
       final deviceId = await _deviceIdentifierPlugin.getSupportedIdentifiers();
       print(
         'Device Identifier: runTimeType=${deviceId.runtimeType}  value=$deviceId',
@@ -143,24 +249,85 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  // 删除文件存储ID（Android特有）
-  Future<void> _deleteFileBasedId(BuildContext ctx) async {
-    if (!Platform.isAndroid) {
-      _showSnackBar('This feature is only available on Android', ctx);
+  /// 获取文件标识ID
+  /// 仅在Android平台上有效
+  void _getFileDeviceIdentifier(BuildContext ctx) async {
+    try {
+      if (!Platform.isAndroid) {
+        _showSnackBar('This feature is only available on Android', ctx);
+        return;
+      }
+      final result = await _deviceIdentifierPlugin.getFileDeviceIdentifier();
+      if (result != null && result.isNotEmpty) {
+        _showSnackBar('File-based ID: $result', ctx);
+      } else {
+        _showSnackBar('File-based ID is not available', ctx);
+      }
+      setState(() {
+        _fileBasedId = result ?? 'Not available';
+      });
+    } catch (e) {
+      _showErrorDialog('Failed to get file device identifier: $e', ctx);
+    }
+  }
+
+  /// 请求Android平台的文件读写权限
+  /// 仅在Android平台上有效
+  void _requestExternalStoragePermission(BuildContext ctx) async {
+    try {
+      if (!Platform.isAndroid) {
+        _showSnackBar('This feature is only available on Android', ctx);
+        return;
+      }
+      final hasPermission =
+          await _deviceIdentifierPlugin.hasExternalStoragePermission();
+      if (hasPermission) {
+        _showSnackBar("已经拥有文件读写权限", ctx);
+        return;
+      }
+      // 用一个对话框提前提示用户需要请求权限
+      _showRequestPermissionDialog(ctx);
+    } catch (e) {
+      _showErrorDialog('Failed to request permission: $e', ctx);
       return;
     }
+  }
 
+  /// 是否拥有文件读写权限
+  /// 仅在Android平台上有效
+  void _checkExternalStoragePermission(BuildContext ctx) async {
     try {
-      final success =
-          await _deviceIdentifierPlugin.deleteFileDeviceIdentifier();
+      if (!Platform.isAndroid) {
+        _showSnackBar('This feature is only available on Android', ctx);
+        return;
+      }
+      final hasPermission =
+          await _deviceIdentifierPlugin.hasExternalStoragePermission();
       _showSnackBar(
-        success
-            ? 'File-based ID deleted successfully'
-            : 'Failed to delete file-based ID',
+        hasPermission
+            ? 'Yes, I currently have permission'
+            : "No, you don't have permission at this time",
         ctx,
       );
-      if (success) {
+    } catch (e) {
+      _showErrorDialog('Failed to check permission: $e', ctx);
+    }
+  }
+
+  /// 删除Android下的文件存储ID
+  /// 仅在Android平台上有效
+  void _deleteFileDeviceIdentifier(BuildContext ctx) async {
+    try {
+      if (!Platform.isAndroid) {
+        _showSnackBar('This feature is only available on Android', ctx);
+        return;
+      }
+      final result = await _deviceIdentifierPlugin.deleteFileDeviceIdentifier();
+      if (result) {
+        _showSnackBar('File-based ID deleted successfully', ctx);
         _getAllDeviceInfo(ctx); // 重新获取信息
+      } else {
+        _showSnackBar('Failed to delete file-based ID', ctx);
       }
     } catch (e) {
       _showErrorDialog('Failed to delete file-based ID: $e', ctx);
@@ -168,13 +335,26 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _showSnackBar(String message, BuildContext ctx) {
+    if (!mounted) return;
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _showErrorDialog(String message, BuildContext ctx) {
-    print('Error: $message');
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    if (!mounted) return;
+    showDialog(
+      context: ctx,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -242,11 +422,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Device Identifier Plugin Demo',
+      title: 'Device Identifier Plugin Example',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Device Identifier Plugin Demo'),
+          title: const Text('Device Identifier Plugin Example'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         ),
         body:
@@ -262,77 +442,57 @@ class _MyAppState extends State<MyApp> {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 20),
-
                       // 操作按钮
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          Builder(
-                            builder: (ctx) {
-                              return ElevatedButton(
+                      Builder(
+                        builder: (ctx) {
+                          return Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              // 获取所有设备信息
+                              ElevatedButton(
                                 onPressed: () {
                                   _getAllDeviceInfo(ctx);
                                 },
-                                child: const Text('Get All Info'),
-                              );
-                            },
-                          ),
-                          if (Platform.isAndroid) ...[
-                            ElevatedButton(
-                              onPressed: () {
-                                _deleteFileBasedId(context);
-                              },
-                              child: const Text('Delete File ID'),
-                            ),
-                            Builder(
-                              builder: (ctx) {
-                                return ElevatedButton(
-                                  onPressed: () async {
-                                    final hasPermission =
-                                        await _deviceIdentifierPlugin
-                                            .hasExternalStoragePermission();
-                                    _showSnackBar(
-                                      hasPermission
-                                          ? 'yes you get it'
-                                          : 'no you do not get it',
-                                      ctx,
-                                    );
+                                child: const Text('获取所有设备信息'),
+                              ),
+                              // 删除Android下的文件存储ID
+                              ElevatedButton(
+                                onPressed: () {
+                                  _deleteFileDeviceIdentifier(ctx);
+                                },
+                                child: const Text('删除文件存储标识符(Android)'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  _checkExternalStoragePermission(ctx);
+                                },
+                                child: const Text('是否有读写文件权限(Android)'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  _requestExternalStoragePermission(ctx);
+                                },
+                                child: const Text('请求读写文件权限(Android)'),
+                              ),
+                              // 获取文件ID
+                              ElevatedButton(
+                                onPressed: () async {
+                                  _getFileDeviceIdentifier(ctx);
+                                },
+                                child: const Text('读取文件标识id(Android)'),
+                              ),
+                              if (Platform.isIOS) ...[
+                                ElevatedButton(
+                                  onPressed: () {
+                                    _requestTrackingAuthorization(ctx);
                                   },
-                                  child: const Text('是否拥有读写文件权限'),
-                                );
-                              },
-                            ),
-                            ElevatedButton(
-                              onPressed: () async {
-                                await _deviceIdentifierPlugin
-                                    .requestExternalStoragePermission();
-                              },
-                              child: const Text('请求读写文件权限'),
-                            ),
-                            // 获取文件ID
-                            ElevatedButton(
-                              onPressed: () async {
-                                final result =
-                                    await _deviceIdentifierPlugin
-                                        .getFileDeviceIdentifier();
-                                print("cyh --------> 获取文件ID: $result");
-                                setState(() {
-                                  _fileBasedId = result ?? 'Not available';
-                                });
-                              },
-                              child: const Text('获取文件id'),
-                            ),
-                          ],
-                          if (Platform.isIOS) ...[
-                            ElevatedButton(
-                              onPressed: () {
-                                _requestTrackingAuthorization(context);
-                              },
-                              child: const Text('Request Tracking Auth'),
-                            ),
-                          ],
-                        ],
+                                  child: const Text('请求获取广告追踪授权(iOS)'),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
 
@@ -497,6 +657,49 @@ class _MyAppState extends State<MyApp> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showRequestPermissionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text(
+            '提示',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            '需要获取文件读写管理权限，以便生成用户识别ID，点击确定后开始请求权限。',
+            style: TextStyle(fontSize: 15),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await _deviceIdentifierPlugin
+                    .requestExternalStoragePermission();
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
