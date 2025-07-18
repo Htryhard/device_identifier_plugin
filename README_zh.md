@@ -37,7 +37,7 @@
 
 ```yaml
 dependencies:
-  device_identifier_plugin: ^0.0.7
+  device_identifier_plugin: ^0.0.8
 ```
 
 然后执行：
@@ -144,22 +144,29 @@ print('Best Device ID: $bestId');
 ### 判断是否为模拟器
 
 ```dart
-bool isEmu = await deviceIdentifier.isEmulator();
-print('Is Emulator: $isEmu');
+bool isEmulator = await deviceIdentifier.isEmulator();
+print('Is Emulator: $isEmulator');
 ```
 
 ### 获取设备信息
 
 ```dart
-Map<String, String?> info = await deviceIdentifier.getDeviceInfo();
-print('Device Info: $info');
+Map<String, String?> deviceInfo = await deviceIdentifier.getDeviceInfo();
+print('Device Info: $deviceInfo');
 ```
 
 ### 获取所有支持的标识符
 
 ```dart
-Map<String, dynamic> ids = await deviceIdentifier.getSupportedIdentifiers();
-print('Supported Identifiers: $ids');
+Map<String, dynamic> identifiers = await deviceIdentifier.getSupportedIdentifiers();
+print('Supported Identifiers: $identifiers');
+```
+
+### 获取平台版本
+
+```dart
+String? platformVersion = await deviceIdentifier.getPlatformVersion();
+print('Platform Version: $platformVersion');
 ```
 
 ### Android 专用：文件存储设备标识符
@@ -170,8 +177,33 @@ await deviceIdentifier.requestExternalStoragePermission();
 
 bool hasPermission = await deviceIdentifier.hasExternalStoragePermission();
 if (hasPermission) {
+  // 获取文件存储设备标识符
   String? fileId = await deviceIdentifier.getFileDeviceIdentifier();
   print('File Device ID: $fileId');
+
+  // 生成新的文件存储设备标识符
+  String? generatedId = await deviceIdentifier.generateFileDeviceIdentifier();
+  print('Generated File Device ID: $generatedId');
+
+  // 检查文件存储设备标识符是否存在
+  bool exists = await deviceIdentifier.hasFileDeviceIdentifier();
+  print('File Device ID Exists: $exists');
+
+  // 删除文件存储设备标识符
+  bool deleted = await deviceIdentifier.deleteFileDeviceIdentifier();
+  print('File Device ID Deleted: $deleted');
+}
+```
+
+### Android 专用：获取 Android ID 和广告标识符
+
+```dart
+if (Platform.isAndroid) {
+  String? androidId = await deviceIdentifier.getAndroidId();
+  print('Android ID: $androidId');
+
+  String? advertisingId = await deviceIdentifier.getAdvertisingIdForAndroid();
+  print('Advertising ID: $advertisingId');
 }
 ```
 
@@ -202,6 +234,28 @@ if (Platform.isIOS) {
 }
 ```
 
+### iOS 专用：获取 Apple IDFV
+
+```dart
+if (Platform.isIOS) {
+  String? idfv = await deviceIdentifier.getAppleIDFV();
+  print('Apple IDFV: $idfv');
+}
+```
+
+### iOS 专用：自定义钥匙串服务和账户
+
+```dart
+if (Platform.isIOS) {
+  await deviceIdentifier.setKeychainServiceAndAccount(
+    service: 'com.example.myapp.keychain',
+    keyAccount: 'my_device_uuid',
+    deviceIDAccount: 'my_ios_device_id',
+  );
+  print('已设置自定义钥匙串服务和账户');
+}
+```
+
 ---
 
 ## API 参考
@@ -215,16 +269,17 @@ if (Platform.isIOS) {
 | `getSupportedIdentifiers()` | `Future<Map<String, dynamic>>` | 获取所有支持的标识符 | Android, iOS |
 | `getAdvertisingIdForiOS()` | `Future<String?>` | 获取 IDFA（需用户授权） | iOS |
 | `requestTrackingAuthorization()` | `Future<String?>` | 请求追踪授权（iOS 14.5+） | iOS |
-| `getAppleIDFV()` | `Future<String?>` | 获取 IDFV | iOS |
+| `getAppleIDFV()` | `Future<String?>` | 获取 IDFV（Vendor 标识符） | iOS |
 | `getKeychainUUID()` | `Future<String?>` | 获取 Keychain UUID | iOS |
 | `hasKeychainUUID()` | `Future<bool>` | 判断 Keychain UUID 是否存在 | iOS |
 | `generateKeychainUUID()` | `Future<String?>` | 生成并存储新的 Keychain UUID | iOS |
-| `getAdvertisingIdForAndroid()` | `Future<String?>` | 获取 Google 广告ID | Android |
+| `setKeychainServiceAndAccount({String service, String keyAccount, String deviceIDAccount})` | `Future<void>` | 设置自定义钥匙串服务和账户 | iOS |
+| `getAdvertisingIdForAndroid()` | `Future<String?>` | 获取 Google 广告ID（GAID） | Android |
 | `getAndroidId()` | `Future<String?>` | 获取 Android ID | Android |
-| `getFileDeviceIdentifier()` | `Future<String?>` | 获取文件存储设备标识符 | Android |
-| `generateFileDeviceIdentifier()` | `Future<String?>` | 生成并存储新的文件设备标识符 | Android |
-| `deleteFileDeviceIdentifier()` | `Future<bool>` | 删除文件设备标识符 | Android |
-| `hasFileDeviceIdentifier()` | `Future<bool>` | 判断文件设备标识符是否存在 | Android |
+| `getFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | 获取文件存储设备标识符 | Android |
+| `generateFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | 生成并存储新的文件设备标识符 | Android |
+| `deleteFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<bool>` | 删除文件存储设备标识符 | Android |
+| `hasFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<bool>` | 判断文件存储设备标识符是否存在 | Android |
 | `requestExternalStoragePermission()` | `Future<void>` | 请求外部存储权限 | Android |
 | `hasExternalStoragePermission()` | `Future<bool>` | 判断外部存储权限是否已授权 | Android |
 

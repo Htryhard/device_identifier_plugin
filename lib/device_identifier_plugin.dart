@@ -2,16 +2,15 @@ import 'dart:io';
 
 import 'device_identifier_plugin_platform_interface.dart';
 
-/// DeviceIdentifierPlugin - 设备标识符插件
+/// DeviceIdentifierPlugin - Device Identifier Plugin
 ///
-/// 提供多种获取设备唯一标识符的方法，支持Android和iOS平台
-/// Android：包含Android ID、广告ID、安装UUID、设备指纹、序列号等多种标识符
-/// iOS：包含iOS设备ID、IDFV、IDFA、Keychain UUID、设备指纹等多种标识符
+/// Provides multiple methods to obtain device identifiers, supporting both Android and iOS platforms
+/// Android: includes Android ID, GAID, install UUID, device fingerprint, serial number, and more
+/// iOS: includes iOS device ID, IDFV, IDFA, Keychain UUID, device fingerprint, and more
 class DeviceIdentifierPlugin {
   late String _androidFileName = 'device_id.txt';
   late String _androidFolderName = 'DeviceIdentifier';
 
-  // 单例获取
   static final DeviceIdentifierPlugin _instance =
       DeviceIdentifierPlugin._internal();
 
@@ -23,9 +22,10 @@ class DeviceIdentifierPlugin {
 
   static DeviceIdentifierPlugin get instance => _instance;
 
-  /// 设置Android文件存储的文件名和文件夹名称
-  /// [androidFileName] 文件名，默认为 'device_id.txt'
-  /// [androidFolderName] 文件夹名称，默认为 'DeviceIdentifier'
+  /// Set the file name and folder name for saving the identifier on Android external storage
+  /// For example: /storage/emulated/0/DeviceIdentifier/device_id.txt
+  /// [androidFileName] File name, default is 'device_id.txt'
+  /// [androidFolderName] Folder name, default is 'DeviceIdentifier'
   void setAndroidFileStorage({
     String androidFileName = 'device_id.txt',
     String androidFolderName = 'DeviceIdentifier',
@@ -34,34 +34,34 @@ class DeviceIdentifierPlugin {
     _androidFolderName = androidFolderName;
   }
 
-  /// 获取平台版本信息
+  /// Get platform version information
   Future<String?> getPlatformVersion() {
     return DeviceIdentifierPluginPlatform.instance.getPlatformVersion();
   }
 
-  /// 获取最优的设备标识符
-  /// 必定返回一个最适合当前平台的设备标识符
+  /// Get the optimal device identifier
+  /// Always returns the most suitable device identifier for the current platform
   Future<String> getBestDeviceIdentifier() async {
     if (Platform.isAndroid) {
-      // 1、优先获取Android ID
+      // 1. Prefer to get Android ID
       final androidId =
           await DeviceIdentifierPluginPlatform.instance.getAndroidId();
       if (androidId != null && androidId.isNotEmpty) {
         return androidId;
       }
-      // 2、如果Android ID不可用，尝试判断是否有外部设备读取权限
+      // 2. If Android ID is not available, try to check if external storage read permission is granted
       final hasPermission =
           await DeviceIdentifierPluginPlatform.instance
               .hasExternalStoragePermission();
       if (hasPermission) {
-        // 如果有权限，尝试获取基于文件的设备标识符
+        // If permission is granted, try to get the file-based device identifier
         final fileDeviceId =
             await DeviceIdentifierPluginPlatform.instance
                 .getFileDeviceIdentifier();
         if (fileDeviceId != null && fileDeviceId.isNotEmpty) {
           return fileDeviceId;
         } else {
-          // 生成新的基于文件的设备标识符
+          // Generate a new file-based device identifier
           final generatedId =
               await DeviceIdentifierPluginPlatform.instance
                   .generateFileDeviceIdentifier();
@@ -70,21 +70,21 @@ class DeviceIdentifierPlugin {
           }
         }
       }
-      // 3、如果没有外部存储权限或获取失败，尝试获取广告ID
+      // 3. If no external storage permission or failed to get, try to get advertising ID
       final advertisingId =
           await DeviceIdentifierPluginPlatform.instance
               .getAdvertisingIdForAndroid();
       if (advertisingId != null && advertisingId.isNotEmpty) {
         return advertisingId;
       }
-      // 最后使用设备指纹获取Android标识符，这个属性必定会有值
+      // Finally, use device fingerprint to get Android identifier, this property will always have a value
       final supperIdMap =
           await DeviceIdentifierPluginPlatform.instance
               .getSupportedIdentifiers();
       final deviceFingerprint = supperIdMap['deviceFingerprint'] as String?;
       return deviceFingerprint ?? "";
     } else if (Platform.isIOS) {
-      // 1、优先获取钥匙串UUID
+      // 1. Prefer to get Keychain UUID
       final hasKeychainUUID =
           await DeviceIdentifierPluginPlatform.instance.hasKeychainUUID();
       if (hasKeychainUUID) {
@@ -92,7 +92,7 @@ class DeviceIdentifierPlugin {
             await DeviceIdentifierPluginPlatform.instance.getKeychainUUID();
         return keychainUUID!;
       } else {
-        // 如果钥匙串UUID不可用，尝试生成新的
+        // If Keychain UUID is not available, try to generate a new one
         final generatedUUID =
             await DeviceIdentifierPluginPlatform.instance
                 .generateKeychainUUID();
@@ -100,14 +100,14 @@ class DeviceIdentifierPlugin {
           return generatedUUID;
         }
       }
-      // 2、获取广告标识符
+      // 2. Get advertising identifier
       final idfa =
           await DeviceIdentifierPluginPlatform.instance
               .getAdvertisingIdForiOS();
       if (idfa != null && idfa.isNotEmpty) {
         return idfa;
       }
-      // 最后获取iOS设备ID，这个ID必定会返回值
+      // Finally, get iOS device ID, this ID will always return a value
       final supperIdMap =
           await DeviceIdentifierPluginPlatform.instance
               .getSupportedIdentifiers();
@@ -118,79 +118,78 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 检查当前设备是否为模拟器
+  /// Check if the current device is an emulator
   ///
-  /// 通过检查设备的硬件特征来判断是否为模拟器环境
+  /// Determine whether it is an emulator environment by checking the device's hardware characteristics
   ///
-  /// Android：包括指纹信息、型号名称、制造商等
-  /// iOS：通过编译条件判断是否为Simulator
+  /// Android: includes fingerprint info, model name, manufacturer, etc.
+  /// iOS: determined by compilation conditions
   ///
-  /// 返回true表示是模拟器，false表示是真实设备
+  /// Returns true for emulator, false for real device
   Future<bool> isEmulator() {
     return DeviceIdentifierPluginPlatform.instance.isEmulator();
   }
 
-  /// 获取设备基本信息
+  /// Get basic device information
   ///
-  /// 返回设备的详细硬件和系统信息
+  /// Returns detailed hardware and system information of the device
   ///
-  /// Android返回如下：
-  /// - brand: 设备品牌（如 Xiaomi、HUAWEI、Samsung）
-  /// - model: 设备型号（如 MI 10、SM-G9730）
-  /// - manufacturer: 设备制造商（如 Xiaomi、HUAWEI、Samsung）
-  /// - device: 设备名称（设备内部代号，如 "cepheus"）
-  /// - product: 产品名称（如 "cepheus"）
-  /// - board: 主板名称（如 "msm8998"）
-  /// - hardware: 硬件名称（如 "qcom"）
-  /// - android_version: 系统版本号（如 "13"）
-  /// - sdk_int: 系统SDK版本号（如 "33"）
-  /// - fingerprint: 设备指纹（唯一标识一台设备的字符串）
-  /// - is_emulator: 是否为模拟器（true/false）
+  /// Android returns:
+  /// - brand: device brand (e.g. Xiaomi, HUAWEI, Samsung)
+  /// - model: device model (e.g. MI 10, SM-G9730)
+  /// - manufacturer: device manufacturer (e.g. Xiaomi, HUAWEI, Samsung)
+  /// - device: device name (internal code, e.g. "cepheus")
+  /// - product: product name (e.g. "cepheus")
+  /// - board: board name (e.g. "msm8998")
+  /// - hardware: hardware name (e.g. "qcom")
+  /// - android_version: system version (e.g. "13")
+  /// - sdk_int: system SDK version (e.g. "33")
+  /// - fingerprint: device fingerprint (unique string identifying a device)
+  /// - is_emulator: whether it is an emulator (true/false)
   ///
-  /// iOS返回如下：
-  /// - model: 设备型号标识符（如 "iPhone14,2"）
-  /// - name: 设备名称（如 "张三的iPhone"）
-  /// - systemName: 操作系统名称（如 "iOS"）
-  /// - systemVersion: 操作系统版本号（如 "17.0.2"）
-  /// - localizedModel: 本地化设备型号（如 "iPhone"）
-  /// - isSimulator: 是否为模拟器（"true"/"false"）
-  /// - screenSize: 屏幕分辨率（如 "390x844"）
-  /// - screenScale: 屏幕缩放因子（如 "3.0"）
-  /// - timeZone: 当前时区标识符（如 "Asia/Shanghai"）
-  /// - language: 当前系统语言（如 "zh"、"en"）
+  /// iOS returns:
+  /// - model: device model identifier (e.g. "iPhone14,2")
+  /// - name: device name (e.g. "Zhang San's iPhone")
+  /// - systemName: OS name (e.g. "iOS")
+  /// - systemVersion: OS version (e.g. "17.0.2")
+  /// - localizedModel: localized device model (e.g. "iPhone")
+  /// - isSimulator: whether it is a simulator ("true"/"false")
+  /// - screenSize: screen resolution (e.g. "390x844")
+  /// - screenScale: screen scale factor (e.g. "3.0")
+  /// - timeZone: current time zone identifier (e.g. "Asia/Shanghai")
+  /// - language: current system language (e.g. "zh", "en")
   Future<Map<String, String?>> getDeviceInfo() {
     return DeviceIdentifierPluginPlatform.instance.getDeviceInfo();
   }
 
-  /// 获取设备支持的标识符
-  /// Android和iOS通用接口
-  /// Android会返回：
-  /// - androidId: Android ID（工厂重置、刷机、切换用户时会变化，卸载重装不变）
-  /// - advertisingId: 广告ID（用户可手动重置，约每月自动重置一次，卸载重装不变）
-  /// - installUuid: 安装UUID（每次安装都会生成新的，卸载重装必然变化）
-  /// - deviceFingerprint: 设备指纹（基于主板名称、品牌、设备名、硬件名、设备制造商、设备型号、产品名、系统版本号、SDK 版本号、
-  ///                      屏幕宽度（像素）、屏幕高度（像素）、屏幕密度（DPI）、支持的 CPU 架构编码后生成,系统更新或硬件变化时可能变化）
-  /// - buildSerial: 设备序列号（硬件级别标识符，除非更换设备否则不变，但如果不是系统应该或者拥有系统签名，都无法再获取到）
-  /// - combinedId: 组合ID（基于androidId、advertisingId、installUuid、deviceFingerprint组合生成，变化取决于组成部分）
-  /// - isLimitAdTrackingEnabled: 是否限制广告追踪（用户设置，影响广告ID的使用）
+  /// Get supported device identifiers
+  /// Common interface for Android and iOS
+  /// Android returns:
+  /// - androidId: Android ID (changes on factory reset, flashing, user switch, not changed on uninstall/reinstall)
+  /// - advertisingId: Advertising ID (user can reset manually, auto-reset about once a month, not changed on uninstall/reinstall)
+  /// - installUuid: Install UUID (newly generated on each install, always changes on uninstall/reinstall)
+  /// - deviceFingerprint: Device fingerprint (generated based on board name, brand, device name, hardware name, manufacturer, model, product, system version, SDK version, screen width/height/density, supported CPU architectures; may change on system update or hardware change)
+  /// - buildSerial: Device serial number (hardware-level identifier, does not change unless device is replaced, but cannot be obtained without system privileges or signature)
+  /// - combinedId: Combined ID (generated from androidId, advertisingId, installUuid, deviceFingerprint; changes depend on components)
+  /// - isLimitAdTrackingEnabled: Whether ad tracking is limited (user setting, affects use of advertising ID)
   ///
-  /// iOS会返回：
-  /// - iosDeviceID: iOS设备ID（使用idfv、deviceFingerprint、idfa、getDeviceInfo()生成的ID，如果这几个属性都为空，则是用当前时间戳生成。生成后将保存在钥匙串中以便下次使用）
-  /// - idfv: IDFV（同一开发者应用共享，卸载重装时可能变化）
-  /// - idfa: IDFA（广告标识符，iOS 14.5+ 需要用户授权，卸载重装不变）
-  /// - keychainUUID: Keychain UUID（存储在钥匙串中，最稳定的标识符）
-  /// - deviceFingerprint: 设备指纹（基于硬件信息生成的相对稳定标识符，用于生成指纹的信息：设备型号标识符、系统版本信息、屏幕尺寸和像素密度、时区信息、语言设置）
-  /// - launchUUID: 应用启动UUID（每次应用启动生成，测试用）
-  /// - combinedId: 组合ID（多个标识符的组合哈希，用于组合的信息有：idfv、keychainUUID、deviceFingerprint、idfa，如果这几个信息都为空，则随机生成ID）
-  /// - isLimitAdTrackingEnabled: 是否限制广告追踪（ATT授权状态）
+  /// iOS returns:
+  /// - iosDeviceID: iOS device ID (generated from idfv, deviceFingerprint, idfa, getDeviceInfo(); if all are empty, generated from current timestamp. Saved in keychain for reuse)
+  /// - idfv: IDFV (shared among apps from the same developer, may change on uninstall/reinstall)
+  /// - idfa: IDFA (requires user authorization on iOS 14.5+, not changed on uninstall/reinstall)
+  /// - keychainUUID: Keychain UUID (stored in keychain, most stable identifier)
+  /// - deviceFingerprint: Device fingerprint (relatively stable identifier generated from hardware info: model, system version, screen size/density, time zone, language)
+  /// - launchUUID: App launch UUID (generated on each app launch, for testing)
+  /// - combinedId: Combined ID (hash of multiple identifiers: idfv, keychainUUID, deviceFingerprint, idfa; if all are empty, randomly generated)
+  /// - isLimitAdTrackingEnabled: Whether ad tracking is limited (ATT authorization status)
   Future<Map<String, dynamic>> getSupportedIdentifiers() {
     return DeviceIdentifierPluginPlatform.instance.getSupportedIdentifiers();
   }
 
-  /// iOS获取广告标识符
-  /// iOS接口
-  /// 返回的是IDFA - Identifier for Advertisers，此ID需要用户授权
-  /// 需要调用[requestTrackingAuthorization]方法请求用户授权后才能获取
+  /// Get advertising identifier
+  /// iOS interface
+  /// Returns IDFA - Identifier for Advertisers, requires user authorization
+  /// Must call [requestTrackingAuthorization] to request user authorization before obtaining
   Future<String?> getAdvertisingIdForiOS() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getAdvertisingIdForiOS();
@@ -201,18 +200,18 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// iOS 特有方法：请求广告追踪权限
+  /// iOS only: request ad tracking permission
   ///
-  /// 在iOS 14.5+版本中，需要用户明确授权才能获取IDFA
+  /// On iOS 14.5+, user authorization is required to obtain IDFA
   ///
-  /// 返回授权状态：
-  /// - 'notDetermined': 用户尚未做出选择
-  /// - 'restricted': 受限制（例如家长控制）
-  /// - 'denied': 用户拒绝授权
-  /// - 'authorized': 用户已授权
+  /// Returns authorization status:
+  /// - 'notDetermined': user has not made a choice
+  /// - 'restricted': restricted (e.g. parental controls)
+  /// - 'denied': user denied authorization
+  /// - 'authorized': user authorized
   ///
-  /// 此方法会弹出系统权限对话框，请求用户授权
-  /// 拥有此权限才可调用[getAdvertisingIdForiOS]方法获取IDFA
+  /// This method will pop up a system dialog to request user authorization
+  /// Authorization is required to call [getAdvertisingIdForiOS]
   Future<String?> requestTrackingAuthorization() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance
@@ -224,16 +223,16 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 设置钥匙串的服务和账户名称
-  /// iOS专属接口
-  /// 用于自定义钥匙串存储位置
-  /// [service] 钥匙串服务名称，默认为 'com.hicyh.getdeviceid.keychain'
-  /// [keyAccount] 钥匙串账户名称，默认为 'device_uuid'
-  /// [deviceIDAccount] 钥匙串设备ID账户名称，默认为 'ios_device_id'
-  /// 如果不设置则使用默认值
-  /// 如果需要在iOS中使用钥匙串存储设备标识符，
-  /// 请在调用其他钥匙串相关方法之前先调用此方法设置服务和账户名称
-  /// 注意：此方法仅在iOS平台上有效，Android平台不支持钥匙串存储
+  /// Set keychain service and account
+  /// iOS only
+  /// Used to customize keychain storage location
+  /// [service] Keychain service name, default is 'com.hicyh.getdeviceid.keychain'
+  /// [keyAccount] Keychain account name, default is 'device_uuid'
+  /// [deviceIDAccount] Keychain device ID account name, default is 'ios_device_id'
+  /// If not set, default values are used
+  /// If you need to use keychain to store device identifier on iOS,
+  /// please call this method before other keychain-related methods
+  /// Note: This method is only valid on iOS, Android does not support keychain storage
   Future<void> setKeychainServiceAndAccount({
     String service = 'com.hicyh.getdeviceid.keychain',
     String keyAccount = 'device_uuid',
@@ -253,9 +252,9 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 获取idfv
-  /// iOS专属接口
-  /// 返回IDFV（Identifier for Vendor），同一开发者应用共享
+  /// Get idfv
+  /// iOS only
+  /// Returns IDFV (Identifier for Vendor), shared among apps from the same developer
   Future<String?> getAppleIDFV() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getAppleIDFV();
@@ -266,10 +265,10 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 获取钥匙串UUID
-  /// iOS专属接口
-  /// 返回存储在钥匙串中的UUID
-  /// 如果未存储则返回null或空字符
+  /// Get Keychain UUID
+  /// iOS only
+  /// Returns UUID stored in keychain
+  /// Returns null or empty if not stored
   Future<String?> getKeychainUUID() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.getKeychainUUID();
@@ -280,9 +279,9 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 检查是否存在钥匙串UUID
-  /// iOS专属接口
-  /// 返回true表示存在钥匙串UUID，false表示不存在
+  /// Check if Keychain UUID exists
+  /// iOS only
+  /// Returns true if Keychain UUID exists, false otherwise
   Future<bool> hasKeychainUUID() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.hasKeychainUUID();
@@ -293,9 +292,9 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 生成钥匙串UUID
-  /// iOS专属接口
-  /// 如果已存在则返回现有UUID，否则生成新的UUID并存储后返回
+  /// Generate Keychain UUID
+  /// iOS only
+  /// If already exists, returns existing UUID, otherwise generates and stores a new UUID
   Future<String?> generateKeychainUUID() {
     if (Platform.isIOS) {
       return DeviceIdentifierPluginPlatform.instance.generateKeychainUUID();
@@ -306,9 +305,9 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 获取广告标识符
-  /// Android接口
-  /// Android返回的是GAID - Google Advertising ID，此ID需要设备支持谷歌服务
+  /// Get advertising identifier
+  /// Android interface
+  /// Returns GAID - Google Advertising ID, requires Google services support
   Future<String?> getAdvertisingIdForAndroid() {
     if (Platform.isAndroid) {
       return DeviceIdentifierPluginPlatform.instance
@@ -320,8 +319,8 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 获取Android ID
-  /// Android专属接口
+  /// Get Android ID
+  /// Android only
   Future<String?> getAndroidId() {
     if (Platform.isAndroid) {
       return DeviceIdentifierPluginPlatform.instance.getAndroidId();
@@ -332,22 +331,22 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 获取基于文件的设备标识符
+  /// Get file-based device identifier
   ///
-  /// 在外部存储中创建文件来保存设备唯一标识符，卸载重装后保持不变
+  /// Create a file in external storage to save a unique device identifier, which remains unchanged after uninstall/reinstall
   ///
-  /// 需要相应的存储权限：
-  /// - Android 6.0-10：WRITE_EXTERNAL_STORAGE
-  /// - Android 11+：MANAGE_EXTERNAL_STORAGE
-  /// - iOS：不支持此功能
+  /// Requires storage permissions:
+  /// - Android 6.0-10: WRITE_EXTERNAL_STORAGE
+  /// - Android 11+: MANAGE_EXTERNAL_STORAGE
+  /// - iOS: not supported
   ///
-  /// 调用此函数之前需要先请求外部存储权限[requestExternalStoragePermission]
-  /// 并取得权限[hasExternalStoragePermission]之后调用
+  /// Call [requestExternalStoragePermission] to request permission first
+  /// and call [hasExternalStoragePermission] to check before calling this method
   ///
-  /// [fileName] 文件名，默认为 'device_id.txt'
-  /// [folderName] 文件夹名称，默认为 'DeviceIdentifier'
+  /// [fileName] File name, default is 'device_id.txt'
+  /// [folderName] Folder name, default is 'DeviceIdentifier'
   ///
-  /// 返回设备标识符字符串，如果权限不足或创建失败则返回null
+  /// Returns device identifier string, returns null if permission is insufficient or creation fails
   Future<String?> getFileDeviceIdentifier({
     String? fileName,
     String? folderName,
@@ -366,23 +365,23 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 生成并返回基于文件的设备标识符
+  /// Generate and return file-based device identifier
   ///
-  /// 在外部存储中创建文件来保存设备唯一标识符，卸载重装后保持不变
+  /// Create a file in external storage to save a unique device identifier, which remains unchanged after uninstall/reinstall
   ///
-  /// 需要相应的存储权限：
-  /// - Android 6.0-10：WRITE_EXTERNAL_STORAGE
-  /// - Android 11+：MANAGE_EXTERNAL_STORAGE
-  /// - iOS：不支持此功能
+  /// Requires storage permissions:
+  /// - Android 6.0-10: WRITE_EXTERNAL_STORAGE
+  /// - Android 11+: MANAGE_EXTERNAL_STORAGE
+  /// - iOS: not supported
   ///
-  /// 调用此函数之前需要先请求外部存储权限[requestExternalStoragePermission]
-  /// 并取得权限[hasExternalStoragePermission]之后调用
+  /// Call [requestExternalStoragePermission] to request permission first
+  /// and call [hasExternalStoragePermission] to check before calling this method
   ///
-  /// [fileName] 文件名，默认为 'device_id.txt'
-  /// [folderName] 文件夹名称，默认为 'DeviceIdentifier'
+  /// [fileName] File name, default is 'device_id.txt'
+  /// [folderName] Folder name, default is 'DeviceIdentifier'
   ///
-  /// 返回设备标识符字符串，如果权限不足或创建失败则返回null,与[getFileDeviceIdentifier]方法不同的是
-  /// 此方法会在找不到标识符的时候生成新的标识符并返回，而[getFileDeviceIdentifier]方法不会生成新的标识符
+  /// Returns device identifier string, returns null if permission is insufficient or creation fails. Unlike [getFileDeviceIdentifier],
+  /// this method will generate a new identifier if not found, while [getFileDeviceIdentifier] will not
   Future<String?> generateFileDeviceIdentifier({
     String? fileName,
     String? folderName,
@@ -402,14 +401,14 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 删除基于文件的设备标识符
+  /// Delete file-based device identifier
   ///
-  /// 删除外部存储中保存的设备标识符文件
-  /// Android专属接口
-  /// [fileName] 文件名，默认为 'device_id.txt'
-  /// [folderName] 文件夹名称，默认为 'DeviceIdentifier'
+  /// Delete the device identifier file saved in external storage
+  /// Android only
+  /// [fileName] File name, default is 'device_id.txt'
+  /// [folderName] Folder name, default is 'DeviceIdentifier'
   ///
-  /// 返回是否删除成功
+  /// Returns whether deletion was successful
   Future<bool> deleteFileDeviceIdentifier({
     String? fileName,
     String? folderName,
@@ -428,14 +427,14 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 检查是否存在基于文件的设备标识符
+  /// Check if file-based device identifier exists
   ///
-  /// 检查外部存储中是否已存在设备标识符文件
-  /// Android专属接口
-  /// [fileName] 文件名，默认为 'device_id.txt'
-  /// [folderName] 文件夹名称，默认为 'DeviceIdentifier'
+  /// Check if the device identifier file already exists in external storage
+  /// Android only
+  /// [fileName] File name, default is 'device_id.txt'
+  /// [folderName] Folder name, default is 'DeviceIdentifier'
   ///
-  /// 返回true表示存在标识符，false表示不存在
+  /// Returns true if identifier exists, false otherwise
   Future<bool> hasFileDeviceIdentifier({String? fileName, String? folderName}) {
     if (Platform.isAndroid) {
       fileName ??= _androidFileName;
@@ -451,10 +450,10 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 请求Android特有的读写外部存储权限
-  /// 在Android 6.0-10版本中需要WRITE_EXTERNAL_STORAGE权限
-  /// 在Android 11+版本中需要MANAGE_EXTERNAL_STORAGE权限
-  /// 返回值不代表权限是否已授予，需要另行调用检查权限的接口[hasExternalStoragePermission]
+  /// Request Android-specific read/write external storage permission
+  /// On Android 6.0-10 requires WRITE_EXTERNAL_STORAGE
+  /// On Android 11+ requires MANAGE_EXTERNAL_STORAGE
+  /// Return value does not indicate whether permission is granted, need to check with [hasExternalStoragePermission]
   Future<void> requestExternalStoragePermission() {
     if (Platform.isAndroid) {
       return DeviceIdentifierPluginPlatform.instance
@@ -466,8 +465,8 @@ class DeviceIdentifierPlugin {
     }
   }
 
-  /// 检查Android特有的外部存储权限是否已被授予
-  /// 返回true表示已授予读写外部存储权限，false表示未授予
+  /// Check if Android-specific external storage permission is granted
+  /// Returns true if read/write external storage permission is granted, false otherwise
   Future<bool> hasExternalStoragePermission() {
     if (Platform.isAndroid) {
       return DeviceIdentifierPluginPlatform.instance

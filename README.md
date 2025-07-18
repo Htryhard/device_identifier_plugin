@@ -39,7 +39,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  device_identifier_plugin: ^0.0.6
+  device_identifier_plugin: ^0.0.8
 ```
 
 Then run:
@@ -150,22 +150,29 @@ print('Best Device ID: $bestId');
 ### Check if Device is an Emulator
 
 ```dart
-bool isEmu = await deviceIdentifier.isEmulator();
-print('Is Emulator: $isEmu');
+bool isEmulator = await deviceIdentifier.isEmulator();
+print('Is Emulator: $isEmulator');
 ```
 
 ### Get Device Info
 
 ```dart
-Map<String, String?> info = await deviceIdentifier.getDeviceInfo();
-print('Device Info: $info');
+Map<String, String?> deviceInfo = await deviceIdentifier.getDeviceInfo();
+print('Device Info: $deviceInfo');
 ```
 
 ### Get Supported Identifiers
 
 ```dart
-Map<String, dynamic> ids = await deviceIdentifier.getSupportedIdentifiers();
-print('Supported Identifiers: $ids');
+Map<String, dynamic> identifiers = await deviceIdentifier.getSupportedIdentifiers();
+print('Supported Identifiers: $identifiers');
+```
+
+### Get Platform Version
+
+```dart
+String? platformVersion = await deviceIdentifier.getPlatformVersion();
+print('Platform Version: $platformVersion');
 ```
 
 ### Android-specific: File-based Device Identifier
@@ -176,8 +183,33 @@ await deviceIdentifier.requestExternalStoragePermission();
 
 bool hasPermission = await deviceIdentifier.hasExternalStoragePermission();
 if (hasPermission) {
+  // Get file-based device identifier
   String? fileId = await deviceIdentifier.getFileDeviceIdentifier();
   print('File Device ID: $fileId');
+
+  // Generate a new file-based device identifier if needed
+  String? generatedId = await deviceIdentifier.generateFileDeviceIdentifier();
+  print('Generated File Device ID: $generatedId');
+
+  // Check if file-based device identifier exists
+  bool exists = await deviceIdentifier.hasFileDeviceIdentifier();
+  print('File Device ID Exists: $exists');
+
+  // Delete file-based device identifier
+  bool deleted = await deviceIdentifier.deleteFileDeviceIdentifier();
+  print('File Device ID Deleted: $deleted');
+}
+```
+
+### Android-specific: Get Android ID and Advertising ID
+
+```dart
+if (Platform.isAndroid) {
+  String? androidId = await deviceIdentifier.getAndroidId();
+  print('Android ID: $androidId');
+
+  String? advertisingId = await deviceIdentifier.getAdvertisingIdForAndroid();
+  print('Advertising ID: $advertisingId');
 }
 ```
 
@@ -208,6 +240,28 @@ if (Platform.isIOS) {
 }
 ```
 
+### iOS-specific: Get Apple IDFV
+
+```dart
+if (Platform.isIOS) {
+  String? idfv = await deviceIdentifier.getAppleIDFV();
+  print('Apple IDFV: $idfv');
+}
+```
+
+### iOS-specific: Set Keychain Service and Account
+
+```dart
+if (Platform.isIOS) {
+  await deviceIdentifier.setKeychainServiceAndAccount(
+    service: 'com.example.myapp.keychain',
+    keyAccount: 'my_device_uuid',
+    deviceIDAccount: 'my_ios_device_id',
+  );
+  print('Custom keychain service and account set.');
+}
+```
+
 ---
 
 ## API Reference
@@ -221,16 +275,17 @@ if (Platform.isIOS) {
 | `getSupportedIdentifiers()` | `Future<Map<String, dynamic>>` | Get all supported identifiers | Android, iOS |
 | `getAdvertisingIdForiOS()` | `Future<String?>` | Get IDFA (requires user authorization) | iOS |
 | `requestTrackingAuthorization()` | `Future<String?>` | Request tracking authorization (iOS 14.5+) | iOS |
-| `getAppleIDFV()` | `Future<String?>` | Get IDFV | iOS |
+| `getAppleIDFV()` | `Future<String?>` | Get IDFV (Identifier for Vendor) | iOS |
 | `getKeychainUUID()` | `Future<String?>` | Get Keychain UUID | iOS |
 | `hasKeychainUUID()` | `Future<bool>` | Check if Keychain UUID exists | iOS |
 | `generateKeychainUUID()` | `Future<String?>` | Generate and store a new Keychain UUID | iOS |
-| `getAdvertisingIdForAndroid()` | `Future<String?>` | Get Google Advertising ID | Android |
+| `setKeychainServiceAndAccount({String service, String keyAccount, String deviceIDAccount})` | `Future<void>` | Set custom keychain service and account | iOS |
+| `getAdvertisingIdForAndroid()` | `Future<String?>` | Get Google Advertising ID (GAID) | Android |
 | `getAndroidId()` | `Future<String?>` | Get Android ID | Android |
-| `getFileDeviceIdentifier()` | `Future<String?>` | Get file-based device identifier | Android |
-| `generateFileDeviceIdentifier()` | `Future<String?>` | Generate and store a new file-based device identifier | Android |
-| `deleteFileDeviceIdentifier()` | `Future<bool>` | Delete file-based device identifier | Android |
-| `hasFileDeviceIdentifier()` | `Future<bool>` | Check if file-based device identifier exists | Android |
+| `getFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | Get file-based device identifier | Android |
+| `generateFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | Generate and store a new file-based device identifier | Android |
+| `deleteFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<bool>` | Delete file-based device identifier | Android |
+| `hasFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<bool>` | Check if file-based device identifier exists | Android |
 | `requestExternalStoragePermission()` | `Future<void>` | Request external storage permission | Android |
 | `hasExternalStoragePermission()` | `Future<bool>` | Check if external storage permission is granted | Android |
 

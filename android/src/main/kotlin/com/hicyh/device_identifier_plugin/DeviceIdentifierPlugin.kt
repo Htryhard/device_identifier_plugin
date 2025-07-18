@@ -48,6 +48,10 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       "getPlatformVersion" -> {
         result.success("Android ${android.os.Build.VERSION.RELEASE}")
       }
+      "getDrmId" -> {
+        // 获取DRM ID
+        result.success(deviceIdentifierManager.getWidevineDrmId())
+      }
       "getSupportedIdentifiers" -> {
         // 使用 IO 调度器处理耗时操作，然后切换到主线程返回结果
         CoroutineScope(Dispatchers.IO).launch {
