@@ -12,6 +12,7 @@
 ### Android 支持的标识符
 
 - **Android ID**：唯一设备标识符（推荐）
+- **DRM ID**: 数字版权管理标识符(Widevine id)
 - **Advertising ID**：Google 广告标识符（GAID）
 - **Install UUID**：应用安装时生成的唯一 ID
 - **Device Fingerprint**：基于硬件信息生成的标识符
@@ -103,6 +104,7 @@ flutter pub get
 
 如需获取广告标识符，请在 `ios/Runner/Info.plist` 添加：
 Privacy - Tracking Usage Description
+
 ```xml
 <key>NSUserTrackingUsageDescription</key>
 <string>本应用需要访问IDFA用于分析和个性化广告。</string>
@@ -195,7 +197,7 @@ if (hasPermission) {
 }
 ```
 
-### Android 专用：获取 Android ID 和广告标识符
+### Android 专用：获取 Android ID 、广告标识符和DRM ID
 
 ```dart
 if (Platform.isAndroid) {
@@ -204,6 +206,9 @@ if (Platform.isAndroid) {
 
   String? advertisingId = await deviceIdentifier.getAdvertisingIdForAndroid();
   print('Advertising ID: $advertisingId');
+
+  String? drmId = await deviceIdentifier.getWidevineDrmId();
+  print('DRM ID: $drmId');
 }
 ```
 
@@ -274,6 +279,7 @@ if (Platform.isIOS) {
 | `hasKeychainUUID()` | `Future<bool>` | 判断 Keychain UUID 是否存在 | iOS |
 | `generateKeychainUUID()` | `Future<String?>` | 生成并存储新的 Keychain UUID | iOS |
 | `setKeychainServiceAndAccount({String service, String keyAccount, String deviceIDAccount})` | `Future<void>` | 设置自定义钥匙串服务和账户 | iOS |
+| `getWidevineDrmId()` | `Future<String?>` | 获取 Android DRM ID） | Android |
 | `getAdvertisingIdForAndroid()` | `Future<String?>` | 获取 Google 广告ID（GAID） | Android |
 | `getAndroidId()` | `Future<String?>` | 获取 Android ID | Android |
 | `getFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | 获取文件存储设备标识符 | Android |

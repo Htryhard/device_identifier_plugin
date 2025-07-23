@@ -5,7 +5,7 @@ issue_tracker: https://github.com/Htryhard/device_identifier_plugin/issues
 maintainers:
   - Dai Mao <753132377@qq.com>
 license: MIT
-version: 0.0.8
+version: 0.0.9
 homepage: https://github.com/Htryhard/device_identifier_plugin
 
 environment:

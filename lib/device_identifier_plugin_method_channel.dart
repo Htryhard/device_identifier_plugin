@@ -177,6 +177,14 @@ class MethodChannelDeviceIdentifierPlugin
     return result;
   }
 
+  @override
+  Future<String?> getWidevineDrmId() async {
+    final result = await methodChannel.invokeMethod<String?>(
+      'getWidevineDrmId',
+    );
+    return result;
+  }
+
   /// 获取广告标识符
   /// Android接口
   /// Android返回的是GAID - Google Advertising ID，此ID需要设备支持谷歌服务

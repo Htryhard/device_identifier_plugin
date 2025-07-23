@@ -160,6 +160,13 @@ abstract class DeviceIdentifierPluginPlatform extends PlatformInterface {
     );
   }
 
+  /// 获取DRM ID
+  /// Android接口
+  /// 如果设备不支持，则返回null
+  Future<String?> getWidevineDrmId() {
+    throw UnimplementedError('getWidevineDrmId() has not been implemented.');
+  }
+
   /// 获取广告标识符
   /// Android接口
   /// Android返回的是GAID - Google Advertising ID，此ID需要设备支持谷歌服务

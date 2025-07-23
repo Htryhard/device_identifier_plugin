@@ -14,6 +14,7 @@ A comprehensive Flutter plugin for obtaining various device identifiers, support
 ### Android Supported Identifiers
 
 - **Android ID**: Unique device identifier (recommended)
+- **DRM ID**: Digital Rights Management Identifier (Widevine id)
 - **Advertising ID**: Google Advertising Identifier (GAID)
 - **Install UUID**: Unique ID generated on app installation
 - **Device Fingerprint**: Identifier generated based on hardware info
@@ -201,7 +202,7 @@ if (hasPermission) {
 }
 ```
 
-### Android-specific: Get Android ID and Advertising ID
+### Android-specific: Get the Android ID, Advertising Identifier, and Widevine Id
 
 ```dart
 if (Platform.isAndroid) {
@@ -210,6 +211,10 @@ if (Platform.isAndroid) {
 
   String? advertisingId = await deviceIdentifier.getAdvertisingIdForAndroid();
   print('Advertising ID: $advertisingId');
+
+  /// DRM ID
+  String? drmId = await deviceIdentifier.getWidevineDrmId();
+  print('DRM ID: $drmId');
 }
 ```
 
@@ -280,6 +285,7 @@ if (Platform.isIOS) {
 | `hasKeychainUUID()` | `Future<bool>` | Check if Keychain UUID exists | iOS |
 | `generateKeychainUUID()` | `Future<String?>` | Generate and store a new Keychain UUID | iOS |
 | `setKeychainServiceAndAccount({String service, String keyAccount, String deviceIDAccount})` | `Future<void>` | Set custom keychain service and account | iOS |
+| `getWidevineDrmId()` | `Future<String?>` | Get Android DRM ID） | Android |
 | `getAdvertisingIdForAndroid()` | `Future<String?>` | Get Google Advertising ID (GAID) | Android |
 | `getAndroidId()` | `Future<String?>` | Get Android ID | Android |
 | `getFileDeviceIdentifier({String? fileName, String? folderName})` | `Future<String?>` | Get file-based device identifier | Android |

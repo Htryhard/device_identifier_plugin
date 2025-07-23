@@ -119,6 +119,11 @@ class _MyAppState extends State<MyApp> {
         print('Requested External Storage Permission');
       });
 
+      // 获取Android DRM ID
+      _deviceIdentifierPlugin.getWidevineDrmId().then((value) {
+        print('Widevine DRM ID: $value');
+      });
+
       // 获取广告ID，需要谷歌服务的支持，并且需要添加相关权限
       // 在AndroidManifest.xml中添加：
       // <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
@@ -391,6 +396,10 @@ class _MyAppState extends State<MyApp> {
           identifier['androidId'] != null) {
         lines.add('Android ID: ${identifier['androidId']}');
       }
+      if (identifier.containsKey('widevineDrmId') &&
+          identifier['widevineDrmId'] != null) {
+        lines.add('widevineDrmId: ${identifier['widevineDrmId']}');
+      }
       if (identifier.containsKey('advertisingId') &&
           identifier['advertisingId'] != null) {
         lines.add('Advertising ID: ${identifier['advertisingId']}');
@@ -478,7 +487,12 @@ class _MyAppState extends State<MyApp> {
                               // 获取文件ID
                               ElevatedButton(
                                 onPressed: () async {
-                                  _getFileDeviceIdentifier(ctx);
+                                  // _getFileDeviceIdentifier(ctx);
+                                  DeviceIdentifierPlugin.instance
+                                      .getWidevineDrmId()
+                                      .then((value) {
+                                        print('Widevine DRM ID: $value');
+                                      });
                                 },
                                 child: const Text('读取文件标识id(Android)'),
                               ),

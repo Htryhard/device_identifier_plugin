@@ -305,6 +305,20 @@ class DeviceIdentifierPlugin {
     }
   }
 
+  /// Get Widevine DRM ID
+  /// Android only
+  /// Returns Widevine DRM ID, if device does not support, returns null
+  /// This ID is used for DRM content protection, not suitable for user tracking
+  Future<String?> getWidevineDrmId() {
+    if (Platform.isAndroid) {
+      return DeviceIdentifierPluginPlatform.instance.getWidevineDrmId();
+    } else {
+      throw UnsupportedError(
+        'This method is only supported on Android platforms [getWidevineDrmId()]',
+      );
+    }
+  }
+
   /// Get advertising identifier
   /// Android interface
   /// Returns GAID - Google Advertising ID, requires Google services support

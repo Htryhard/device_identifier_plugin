@@ -64,6 +64,7 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
               "deviceFingerprint" to deviceIdentifier.deviceFingerprint,
               "buildSerial" to deviceIdentifier.buildSerial,
               "combinedId" to deviceIdentifier.combinedId,
+              "widevineDrmId" to deviceIdentifier.widevineDrmId,
               "isLimitAdTrackingEnabled" to deviceIdentifier.isLimitAdTrackingEnabled
             )
             // 切换到主线程返回结果
@@ -297,6 +298,20 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       }
       "hasExternalStoragePermission" -> {
         result.success(hasStoragePermission())
+      }
+      "getWidevineDrmId" -> {
+        CoroutineScope(Dispatchers.IO).launch {
+          try {
+            val widevineDrmId = deviceIdentifierManager.getWidevineDrmId()
+            withContext(Dispatchers.Main) {
+              result.success(widevineDrmId)
+            }
+          } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+              result.error("DEVICE_IDENTIFIER_ERROR", "Failed to get Widevine DRM ID: ${e.message}", null)
+            }
+          }
+        }
       }
       else -> {
         result.notImplemented()

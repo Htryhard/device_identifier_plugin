@@ -64,6 +64,8 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
         val buildSerial: String? = null,
         /** 组合ID: 多个标识符的组合哈希，变化取决于组成部分 */
         val combinedId: String? = null,
+        /** Widevine DRM ID: 用于 DRM 内容保护，设备不支持时返回 null */
+        val widevineDrmId: String? = null,
         /** 是否限制广告追踪: 用户设置，影响广告ID的使用 */
         val isLimitAdTrackingEnabled: Boolean = false
     )
@@ -78,6 +80,7 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
             val installUuid = getInstallUuid()
             val deviceFingerprint = getDeviceFingerprint()
             val buildSerial = getBuildSerial()
+            val widevineDrmId = getWidevineDrmId()
 
             val combinedId = generateCombinedId(
                 androidId,
@@ -93,13 +96,14 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
                 deviceFingerprint = deviceFingerprint,
                 buildSerial = buildSerial,
                 combinedId = combinedId,
+                widevineDrmId = widevineDrmId,
                 isLimitAdTrackingEnabled = advertisingInfo.second
             )
         }
     }
 
     /**
-     * 获取 DRM ID
+     * 获取 Widevine DRM ID
      *
      * 稳定性分析：
      * - 卸载重装：不变
@@ -113,18 +117,32 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
      * 特殊情况：
      * - 某些设备可能返回空
      * - 模拟器通常返回固定值
+     *
+     * 注意：此标识符应仅用于合规的应用场景，不应用于用户跟踪
      */
-    fun getWidevineDrmId(): String? {
-        val widevineUUID = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
-        var mediaDrm: MediaDrm? = null
-        return try {
-            mediaDrm = MediaDrm(widevineUUID)
-            val deviceId = mediaDrm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
-            Base64.encodeToString(deviceId, Base64.NO_WRAP)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        } finally {
+@SuppressLint("MissingPermission")
+fun getWidevineDrmId(): String? {
+    val widevineUUID = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+    
+    // 先检查设备是否支持 Widevine
+    if (!MediaDrm.isCryptoSchemeSupported(widevineUUID)) {
+        System.out.println("The device does not support Widevine DRM")
+        return null
+    }
+    
+    var mediaDrm: MediaDrm? = null
+    return try {
+        mediaDrm = MediaDrm(widevineUUID)
+        val deviceId = mediaDrm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+        Base64.encodeToString(deviceId, Base64.NO_WRAP)
+    } catch (e: UnsupportedOperationException) {
+        System.out.println("Does not support obtaining Widevine ID: ${e.message}")
+        null
+    } catch (e: Exception) {
+        System.out.println("Failed to obtain Widevine ID: ${e.message}")
+        null
+    } finally {
+        try {
             mediaDrm?.let {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     it.close()
@@ -133,8 +151,11 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
                     it.release()
                 }
             }
+        } catch (e: Exception) {
+            System.out.println("Failed to close MediaDrm: ${e.message}")
         }
     }
+}
 
     /**
      * 获取 Android ID
