@@ -166,6 +166,7 @@ class DeviceIdentifierPlugin {
   /// Common interface for Android and iOS
   /// Android returns:
   /// - androidId: Android ID (changes on factory reset, flashing, user switch, not changed on uninstall/reinstall)
+  /// - widevineDrmId: DRM ID, Digital Rights Management Identifier (Widevine id)
   /// - advertisingId: Advertising ID (user can reset manually, auto-reset about once a month, not changed on uninstall/reinstall)
   /// - installUuid: Install UUID (newly generated on each install, always changes on uninstall/reinstall)
   /// - deviceFingerprint: Device fingerprint (generated based on board name, brand, device name, hardware name, manufacturer, model, product, system version, SDK version, screen width/height/density, supported CPU architectures; may change on system update or hardware change)

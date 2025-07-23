@@ -487,12 +487,7 @@ class _MyAppState extends State<MyApp> {
                               // 获取文件ID
                               ElevatedButton(
                                 onPressed: () async {
-                                  // _getFileDeviceIdentifier(ctx);
-                                  DeviceIdentifierPlugin.instance
-                                      .getWidevineDrmId()
-                                      .then((value) {
-                                        print('Widevine DRM ID: $value');
-                                      });
+                                  _getFileDeviceIdentifier(ctx);
                                 },
                                 child: const Text('读取文件标识id(Android)'),
                               ),
