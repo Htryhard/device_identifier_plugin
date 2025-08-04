@@ -38,7 +38,7 @@
 
 ```yaml
 dependencies:
-  device_identifier_plugin: ^0.0.8
+  device_identifier_plugin: ^1.0.1
 ```
 
 然后执行：
@@ -86,13 +86,13 @@ flutter pub get
 </manifest>
 ```
 
-#### 配置app/build.gradle，最小支持sdk 23
+#### 配置app/build.gradle，最小支持sdk 21
 
 ```gradle
 
  android {                                                                                     
    defaultConfig {                                                                             
-     minSdkVersion 23                                                                          
+     minSdkVersion 21                                                                         
    }                                                                                           
  } 
 

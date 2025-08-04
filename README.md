@@ -40,7 +40,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  device_identifier_plugin: ^0.0.8
+  device_identifier_plugin: ^1.0.1
 ```
 
 Then run:
@@ -89,13 +89,13 @@ Add the following permissions to your `android/app/src/main/AndroidManifest.xml`
 </manifest>
 ```
 
-#### Configure app/build.gradle, minimum supported SDK 23
+#### Configure app/build.gradle, minimum supported SDK 21
 
 ```gradle
 
  android {                                                                                     
    defaultConfig {                                                                             
-     minSdkVersion 23                                                                          
+     minSdkVersion 21                                                                          
    }                                                                                           
  } 
 
