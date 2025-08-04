@@ -32,6 +32,7 @@ class DeviceIdentifierManager private constructor(private val context: Context) 
         private const val KEY_INSTALL_UUID = "install_uuid"
         private const val KEY_DEVICE_FINGERPRINT = "device_fingerprint"
 
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var instance: DeviceIdentifierManager? = null
 
@@ -126,7 +127,7 @@ fun getWidevineDrmId(): String? {
     
     // 先检查设备是否支持 Widevine
     if (!MediaDrm.isCryptoSchemeSupported(widevineUUID)) {
-        System.out.println("The device does not support Widevine DRM")
+        println("The device does not support Widevine DRM")
         return null
     }
     
@@ -136,10 +137,10 @@ fun getWidevineDrmId(): String? {
         val deviceId = mediaDrm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
         Base64.encodeToString(deviceId, Base64.NO_WRAP)
     } catch (e: UnsupportedOperationException) {
-        System.out.println("Does not support obtaining Widevine ID: ${e.message}")
+        println("Does not support obtaining Widevine ID: ${e.message}")
         null
     } catch (e: Exception) {
-        System.out.println("Failed to obtain Widevine ID: ${e.message}")
+        println("Failed to obtain Widevine ID: ${e.message}")
         null
     } finally {
         try {
@@ -152,7 +153,7 @@ fun getWidevineDrmId(): String? {
                 }
             }
         } catch (e: Exception) {
-            System.out.println("Failed to close MediaDrm: ${e.message}")
+            println("Failed to close MediaDrm: ${e.message}")
         }
     }
 }

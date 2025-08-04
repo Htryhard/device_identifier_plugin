@@ -1,12 +1,10 @@
 package com.hicyh.device_identifier_plugin
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -20,17 +18,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-//import com.hjq.permissions.XXPermissions
-//import com.hjq.permissions.permission.PermissionLists
-//import com.hjq.permissions.permission.base.IPermission
-//import com.hjq.permissions.OnPermissionCallback
 
 /** DeviceIdentifierPlugin */
 class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
-  /// The MethodChannel that will the communication between Flutter and native Android
-  ///
-  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-  /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
   private lateinit var context: Context
   private lateinit var deviceIdentifierManager: DeviceIdentifierManager
@@ -273,21 +263,6 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       }
       // 安卓请求外部存储权限
       "requestExternalStoragePermission" -> {
-//        XXPermissions.with(context).permission(PermissionLists.getWriteExternalStoragePermission())
-//          .request(object :OnPermissionCallback{
-//          override fun onGranted(permissions: MutableList<IPermission>, allGranted: Boolean) {
-//            // 获取权限成功
-//          }
-//            override fun onDenied(permissions: MutableList<IPermission>, doNotAskAgain: Boolean) {
-//              super.onDenied(permissions, doNotAskAgain)
-//              if (doNotAskAgain) {
-//                // 被永久拒绝就跳转到应用权限系统设置页面
-//                XXPermissions.startPermissionActivity(context, permissions)
-//              }else{
-//                // 获取权限失败
-//              }
-//            }
-//        })
         if (activity != null){
           requestStoragePermission(activity!!)
           // 必须要有一个返回值
@@ -341,22 +316,12 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
   // 检查是否有读写外部存储权限
   private fun hasStoragePermission(): Boolean {
-//    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//      // Android 11+ 检查 MANAGE_EXTERNAL_STORAGE 权限
-//      android.provider.Settings.canDrawOverlays(context)
-//    } else {
-//      val writeGranted = android.content.pm.PackageManager.PERMISSION_GRANTED ==
-//              context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-//      val readGranted = android.content.pm.PackageManager.PERMISSION_GRANTED ==
-//              context.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-//      writeGranted && readGranted
-//    }
     return when {
       // Android 11+ 检查 MANAGE_EXTERNAL_STORAGE 权限
       Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
         val result = Environment.isExternalStorageManager()
         // Toast.makeText(context, "Android 11+ $result", Toast.LENGTH_SHORT).show()
-        System.out.println("Android 11+ has storage permission: $result")
+          println("Android 11+ has storage permission: $result")
         return result
       }
       // Android 10 检查传统权限但考虑分区存储
@@ -399,6 +364,4 @@ class DeviceIdentifierPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       )
     }
   }
-
-
 }
